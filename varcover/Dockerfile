@@ -28,7 +28,7 @@ RUN pip install --upgrade pip numpy scipy pandas pysam ipython && \
 
 RUN mkdir -p /varcover
 
-COPY ./varcover /varcover/
+COPY ./src /varcover/
 
 ENV PYTHONPATH=$PYTHONPATH:/pandasVCF/:/SetCoverPy/:/varcover/
 
