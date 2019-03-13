@@ -56,7 +56,7 @@ if __name__ == '__main__':
                                                             solution_df.shape[0]))
 
     time_stamp = str(time.time())
-    
+
     if os.path.isdir(args.output_dir):
         pass
     else:
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     for s in solution_df.columns.unique():
         print(s)
         samples.append(s)
-    
+
     write_samples_path = os.path.join(args.output_dir, 'varcover_solution_samples_{}.tsv'.format(time_stamp))
     write_sample_f = open(write_samples_path, 'w')
     write_sample_f.write('\n'.join(samples))

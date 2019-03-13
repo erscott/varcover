@@ -15,21 +15,21 @@ from io import StringIO
 class EnsemblVar(object):
     """Convenience class to wrap Ensembl Var API
     """
-    
+
     def __init__(self, rsids,
-                 genome='gr37', genotypes=True):
-        
+                 genome='gr37', genotypes=False):
+
         self.genome = genome
         self.genotypes = genotypes
         self.rsids = rsids
         self.ensembl_json = self._post_ensemblvar()
         self.ensembl_res = self.extract_1KG_genotypes()
 
-        
+
     def _post_ensemblvar(self):
-        """Post request using self.rsids, self.genome, and self.genotypes 
+        """Post request using self.rsids, self.genome, and self.genotypes
         """
-        
+
         if self.genome == 'gr37':  # determines genome build to query
             server = "http://grch37.rest.ensembl.org"
         else:
@@ -39,7 +39,7 @@ class EnsemblVar(object):
             ext = "/variation/homo_sapiens?genotypes=1"
         else:
             ext = "/variation/homo_sapiens?genotypes=0"
-            
+
         headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
         rsid_str = ''.join(['["', '","'.join(self.rsids), '"]'])
         r = requests.post(server+ext, headers=headers, data='{ "ids" : ' + rsid_str +' }')
@@ -55,7 +55,7 @@ class EnsemblVar(object):
     def extract_1KG_genotypes(self):
         """Construct genotype dataframe from ensembl variant api json
         """
-        
+
         ensembl_json = self.ensembl_json
         genos = []
         for rsid in ensembl_json.keys():
@@ -78,13 +78,13 @@ class EnsemblVar(object):
                 genos.append(mappings[['allele_string', 'assembly_name', 'location', 'strand', 'rsid']])
 
         return pd.concat(genos, sort=False)
-    
-    
+
+
     def set_rsid_bed(self,
                      write_path=''):
         """Get bed file for rsids
         """
-        
+
         def _parse_location(loc):
             """Parse ensembl location into list
             """
@@ -93,7 +93,7 @@ class EnsemblVar(object):
             list_loc.extend(loc[1].split('-'))
 
             return list_loc
-        
+
         def _chrom_int(c):
             try:
                 return int(c)
@@ -103,7 +103,7 @@ class EnsemblVar(object):
                 if 'Y' in c:
                     return 24
                 return 25
-        
+
         rsid_bed = pd.DataFrame(self.ensembl_res.set_index('rsid')['location']
                                                  .apply(lambda x: "\t".join(_parse_location(x)))
                                                  .drop_duplicates())
@@ -114,45 +114,46 @@ class EnsemblVar(object):
         rsid_bed.loc[:, 'END'] = rsid_bed['rsid_bed'].str.split('\t').str[-1].astype(int)
         rsid_bed.loc[:, 'rsid_bed'] = rsid_bed['rsid_bed'] + '\t' +rsid_bed.index
         rsid_bed = rsid_bed.sort_values(['CHROM_int', 'START', 'END']).reset_index()
-        
+
         if write_path != '':
             rsid_bed.reset_index()[['CHROM', 'START', 'END', 'rsid']].to_csv(write_path,
                                                                              sep='\t',
                                                                              header=False,
                                                                              index=False)
-        
+
         self.rsid_bed = rsid_bed
         return
-    
+
 
 class DaskBGT(object):
-    
+    """Retrive variants intersecting bed file in bgt_dir files
+    """
     def __init__(self, bgt_dir, bed,
                 bgt_bin='~/git/bgt/bgt'):
-        
+
         self.set_bgts_from_dir(bgt_dir)
         self.bed = bed
         self.bgt_bin = bgt_bin
-    
-    
-    
+
+
+
     def get_setcover_df(self):
         """Returns the variant x sample allele count matrix (varcover input)
         """
         self.set_all_bgt_genotypes()
         return self.create_setcover_df()
-    
-    
+
+
     def set_bgts_from_dir(self, bgt_dir):
         """Sets self.bcfs by finding all bgt files in bcf_dir
         """
         bgts = [bgt_dir + b.rstrip('.pbf') for b in os.listdir(bgt_dir) if b.endswith('.pbf')]
         self.bgts = sorted(bgts)
         return
-    
-    
+
+
     def set_sample_bgt_genotypes(self, sampleID):
-        
+
         def getGT(file_path, args=""):
 
             def _cleanBGT(df0, sID):
@@ -178,7 +179,7 @@ class DaskBGT(object):
 
             except:
                 return pd.DataFrame()
-   
+
         daskGT =  partial(getGT, args="-s,{} -B {}".format(sampleID, self.bed))
 
         dfs = [delayed(daskGT)(f) for f in self.bgts]
@@ -187,10 +188,10 @@ class DaskBGT(object):
         res = pd.concat(res, sort=False)
         self.bgt_df = res.sort_values(['CHROM', 'POS'])
         return
-    
-    
+
+
     def set_all_bgt_genotypes(self):
-        
+
         def getGTs(file_path, args=""):  # all samples
 
             def cleanBGT(df0):
@@ -204,13 +205,13 @@ class DaskBGT(object):
                 return df0
 
             def _get_sampleids():
-                
+
                 arg = [self.bgt_bin, 'view', args, file_path, '|grep CHROM']
                 arg = " ".join(arg)
                 p0 = subprocess.Popen(arg, shell=True, stdout=subprocess.PIPE)
                 sampleids = p0.communicate()[0].decode('utf-8').rstrip('\n').split('\t')[9:]
                 return sampleids
-            
+
             sampleids = _get_sampleids()
             arg = [self.bgt_bin, 'view', args, file_path]
             arg = " ".join(arg)
@@ -228,8 +229,8 @@ class DaskBGT(object):
 
             except:
                 return pd.DataFrame()
-            
-        
+
+
         daskGT =  partial(getGTs, args="-B {}".format(self.bed))
 
         dfs = [delayed(daskGT)(f) for f in sorted(self.bgts)]
@@ -244,7 +245,7 @@ class DaskBGT(object):
             self.res = res
         return
 
-    
+
     def create_setcover_df(self):
         """Creates variant x sample allele count matrix
         """
@@ -252,10 +253,13 @@ class DaskBGT(object):
         v_df = pd.DataFrame(v_df.stack(), columns=['GT'])
         v_df.loc[:, 'GTsum'] = v_df['GT'].apply(lambda x: str(x).count('1'))
         v_df.index.names = list(v_df.index.names)[:-1] + ['sample_ids']
-        v_df = v_df.pivot_table(index=['CHROM', 'POS', 'REF', 'ALT'],
+        if 'ID' in v_df.index.names:
+            index_cols = ['CHROM', 'POS', 'REF', 'ALT', 'ID']
+        else:
+            index_cols = ['CHROM', 'POS', 'REF', 'ALT']
+        v_df = v_df.pivot_table(index=index_cols,
                                      columns='sample_ids',
                                      values='GTsum',
                                      fill_value=0)
+
         return v_df
-    
-    

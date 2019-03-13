@@ -112,41 +112,43 @@ def expand_multiallele(df):
     df.loc[:, 'newGT1'] = df['GT1'].astype(int)
     df.loc[:, 'newGT2'] = df['GT2'].astype(int)
     ma_df = df.query('multiallele>0')
-    df = df.drop(ma_df.index).reset_index()
+    if len(ma_df) > 0:
+        df = df.drop(ma_df.index).reset_index()
 
-    ma_df.reset_index(inplace=True)
-    ma_df.loc[:, ['newALT', 'newGT1', 'newGT2']] = [i for i in map(clean_alt,                                                       ma_df[['REF', 'a1', 'a2', 'phase']].values)]
-    ma_df = ma_df[ma_df.newALT.str.contains(',')]
+        ma_df.reset_index(inplace=True)
+        ma_df.loc[:, ['newALT', 'newGT1', 'newGT2']] = [i for i in map(clean_alt,                                                       ma_df[['REF', 'a1', 'a2', 'phase']].values)]
+        ma_df = ma_df[ma_df.newALT.str.contains(',')]
 
+        # Triage through fast vector or slow for loop
+        if alt_count(ma_df) == 1:  # if only triallelic variants in multiallele df then can use fast vector function
 
-    # Triage through fast vector or slow for loop
-    if alt_count(ma_df) == 1:  # if only triallelic variants in multiallele df then can use fast vector function
-
-        expanded_df = fast_expand_multiallele(ma_df)
-
-        # Combine results with non-multi-allelic snps
-        df = df.append(expanded_df)
-
-    else:  # if only >triallelic variants in multiallele df then must use slow for-loop function
-
-        biallelic_vars = ma_df[ma_df['ALT'].str.count(',')==1]
-        multiallelic_vars = ma_df.drop(biallelic_vars.index)
-
-        res = []
-        for i in multiallelic_vars.index:  # iteratate through variants
-            l = multiallelic_vars.loc[i]
-            res.append(slow_expand_multiallele(l))
-
-        try:
-            expanded_df = pd.concat(res)
-            expanded_df = expanded_df.append(biallelic_vars)
+            expanded_df = fast_expand_multiallele(ma_df)
 
             # Combine results with non-multi-allelic snps
             df = df.append(expanded_df)
-        except ValueError: # occurs if no multiallelic_vars
-            pass
 
-        
+        else:  # if only >triallelic variants in multiallele df then must use slow for-loop function
+
+            biallelic_vars = ma_df[ma_df['ALT'].str.count(',')==1]
+            multiallelic_vars = ma_df.drop(biallelic_vars.index)
+
+            res = []
+            for i in multiallelic_vars.index:  # iteratate through variants
+                l = multiallelic_vars.loc[i]
+                res.append(slow_expand_multiallele(l))
+
+            try:
+                expanded_df = pd.concat(res)
+                expanded_df = expanded_df.append(biallelic_vars)
+
+                # Combine results with non-multi-allelic snps
+                df = df.append(expanded_df)
+            except ValueError: # occurs if no multiallelic_vars
+                pass
+
+    else:
+        df = df.reset_index()
+
     return df.sort_values(['CHROM', 'POS', 'sample_ids','newALT'])
 
 
@@ -155,5 +157,30 @@ def create_setcover_df(df):
     df.loc[:, 'GTsum'] = df['newGT1'].astype(int) + df['newGT2'].astype(int)
     del df['ALT']
     df.rename(columns={'newALT':'ALT'}, inplace=True)
+    df = df.drop_duplicates(['CHROM', 'POS', 'REF', 'ALT', 'sample_ids', 'GTsum'])
     return df.set_index(['CHROM', 'POS', 'REF', 'ALT', 'sample_ids'])['GTsum'] \
                     .unstack().fillna(0)
+
+
+def create_setcover_df_from_vcf(vcf_df):
+    """Creates variant x sample allele count matrix using standard vcf dataframe
+    """
+    v_df = vcf_df.set_index(list(vcf_df.columns[:9]))
+    v_df = pd.DataFrame(v_df.stack(), columns=['GT'])
+    v_df.loc[:, 'GTsum'] = v_df['GT'].apply(lambda x: str(x).count('1'))
+    v_df.index.names = list(v_df.index.names)[:-1] + ['sample_ids']
+    v_df = v_df.pivot_table(index=['CHROM', 'POS', 'REF', 'ALT'],
+                                 columns='sample_ids',
+                                 values='GTsum',
+                                 fill_value=0)
+    return v_df
+
+
+def reset_index(df):
+    '''Returns DataFrame with index as columns'''
+    index_df = df.index.to_frame(index=False)
+    df = df.reset_index(drop=True)
+    #  In merge is important the order in which you pass the dataframes
+    # if the index contains a Categorical.
+    # pd.merge(df, index_df, left_index=True, right_index=True) does not work
+    return pd.merge(index_df, df, left_index=True, right_index=True)

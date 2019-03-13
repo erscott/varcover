@@ -75,17 +75,19 @@ class varcover(object):
 
         if reduceSingeltons == True:
             self._reduceBySingletons()
-            costs = costs.loc[self.singletons_removed.columns]
-            g = setcover.SetCover(self.singletons_removed,
-                                  cost=costs.values,
-                                  maxiters=maxit)
-            solution, time_used = g.SolveSCP()
-            self.setcov = g
-            g_s_df = pd.Series(g.s)
-            g_s_df.index = self.singletons_removed.columns
-            g_s_df = pd.DataFrame(g_s_df[g_s_df==True])
-
-
+            if len(self.singletons_removed) > 0:
+                costs = costs.loc[self.singletons_removed.columns]
+                g = setcover.SetCover(self.singletons_removed,
+                                      cost=costs.values,
+                                      maxiters=maxit)
+                solution, time_used = g.SolveSCP()
+                self.setcov = g
+                g_s_df = pd.Series(g.s)
+                g_s_df.index = self.singletons_removed.columns
+                g_s_df = pd.DataFrame(g_s_df[g_s_df==True])
+            else:
+                self.solution = self.df.loc[self.solution.index, self.solution.columns]
+                return
         else:
             g = setcover.SetCover(self.df, cost=costs.values, maxiters=maxit)
 
@@ -95,8 +97,10 @@ class varcover(object):
             g_s_df.index = self.df.columns
             g_s_df = pd.DataFrame(g_s_df[g_s_df==True])
 
-        if reduceSingeltons == True:
-            self.solution = self.solution.join(self.df[g_s_df.index],
+        if reduceSingeltons == True and len(self.solution) > 0:
+            print(self.solution.head())
+            print(self.df.head())
+            self.solution = self.solution.join(self.df.loc[:, g_s_df.index],
                                               how='outer').fillna(0)
 
         else: self.solution = self.df[g_s_df.index]
@@ -150,8 +154,10 @@ class varcover(object):
 
         singletons_removed = df.drop(singleton_and_assoc_vars.index) \
                                .drop(singletons_samples, axis=1)
-
-        pivot_index = ['CHROM', 'POS', 'REF', 'ALT']
+        if 'ID' in singleton_and_assoc_vars.columns:
+            pivot_index = ['CHROM', 'POS', 'REF', 'ALT', 'ID']
+        else:
+            pivot_index = ['CHROM', 'POS', 'REF', 'ALT']
         singleton_and_assoc_vars = singleton_and_assoc_vars.pivot_table(index=pivot_index,
                                           columns='sample_ids',
                                           values=0).fillna(0)
