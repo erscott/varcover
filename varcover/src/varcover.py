@@ -51,6 +51,23 @@ class varcover(object):
         return df.drop(missing.index, axis=1)
 
 
+    def setSampleTargetAlleleCount(self):
+        '''This function creates a Sample x Target Allele Count df'''
+
+        self.sample_target_allele_cnt = pd.DataFrame(self.solution.T.apply(np.sum, axis=1),
+                                                     columns=['Target Allele Count'])
+        return
+
+    def setTargetAlleleCount(self):
+        '''This function creates a Target Allele Count df'''
+
+        self.target_allele_cnt = pd.DataFrame(self.solution.replace(0,np.NaN) \
+                                              .stack().reset_index() \
+                                              .groupby(['CHROM', 'POS', 'REF', 'ALT'])['sample_ids'] \
+                                              .count().sort_values(ascending=False))
+        return
+
+
     def getCoverSet(self, cost='standard', maxit=20, reduceSingeltons=True):
         '''Creates a covering set using SetCoverPy
 
@@ -87,6 +104,8 @@ class varcover(object):
                 g_s_df = pd.DataFrame(g_s_df[g_s_df==True])
             else:  # occurs if reduceSingletons collects all samples in self.solution
                 self.solution = self.df.loc[self.solution.index, self.solution.columns]
+                self.setTargetAlleleCount()
+                self.setSampleTargetAlleleCount()
                 return
         else:
             g = setcover.SetCover(self.df, cost=costs.values, maxiters=maxit)
@@ -104,6 +123,10 @@ class varcover(object):
                                               how='outer').fillna(0)
 
         else: self.solution = self.df[g_s_df.index]
+
+        self.setTargetAlleleCount()
+        self.setSampleTargetAlleleCount()
+
         #self.solution.columns = self.solution.columns.get_level_values(1)
 
 

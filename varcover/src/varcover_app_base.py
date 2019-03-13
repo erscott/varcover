@@ -19,6 +19,7 @@ sys.path.append('/Users/ers/git/pandasVCF')
 from pandasvcf import *
 
 dropped_vars_rsid = pd.DataFrame()
+df = pd.DataFrame()
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -63,7 +64,7 @@ app.layout = html.Div(children=[
     
 ###  Inform the User to Submit RSID or VCF
   
-   html.H3('Submit an RSID file', 
+   html.H3('Submit an RSID file for 1KG Phase 3 Data', 
             style={'textAlign': 'center', 
                    'color': 'purple'}),
     
@@ -142,9 +143,7 @@ app.layout = html.Div(children=[
     
     html.Div(id='output-vcf-upload'),
     html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'}),
-    
-    
-    
+        
 
 ])
   
@@ -170,7 +169,7 @@ def parse_contents(contents, filename, date):
                                io.StringIO(decoded.decode('utf-8')),
                                sep='\t',
                                header=None)
-            rsids.columns = ['rsid']
+            df.columns = ['rsid']
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             rsids = pd.read_excel(io.BytesIO(decoded))
@@ -183,6 +182,7 @@ def parse_contents(contents, filename, date):
         ])
 
     ensembl = EnsemblVar(rsids['rsid'].tolist())
+    
     
     rsid_bed = './rsid{}.bed'.format(str(random.random()).split('.')[-1])
     
@@ -208,23 +208,45 @@ def parse_contents(contents, filename, date):
     #subprocess.run(['rm', rsid_bed],shell=True, check=True)
     df = vc_soln.sort_values(['CHROM', 'POS'])
     
-    missing_rsids = set(rsids['rsid'].tolist()) - set(vc_soln.rsid.values)
+    missing_rsids = list(set(rsids['rsid'].tolist()) - set(vc_soln.rsid.values))
+    
+    solution_samples = vc.sample_target_allele_cnt.reset_index()
     
     if len(missing_rsids) == 0:
         return html.Div([
-            html.H5('VarCover Solution for: '.format(filename)),
+            html.H3('VarCover Results for: {}'.format(filename), 
+                    style={'textAlign': 'left', 
+                           'color': 'purple'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
+            html.H4('VarCover Solution Samples', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
+            dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
+            html.H4('VarCover Solution Matrix', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
             html.H3('No Uncovered Variants'),
             html.Hr(),  # horizontal line
         ])
     else:
-        missing_rsids = pd.DataFrame([missing_rsids], columns=['rsid'])
+        missing_rsids = pd.DataFrame(missing_rsids, columns=['rsid'])
         return html.Div([
-            html.H5('VarCover Solution for: '.format(filename)),
+             html.H3('VarCover Results for: {}'.format(filename), 
+                    style={'textAlign': 'left', 
+                           'color': 'purple'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
+            html.H4('VarCover Solution Samples', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
+            dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
+            html.H4('VarCover Solution Matrix', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
-            html.H3('Uncovered Variants'),
+            html.H4('Uncovered Variants', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
             dt.DataTable(rows=missing_rsids.to_dict('records'), filterable=True),
 
             html.Hr(),  # horizontal line
@@ -267,25 +289,45 @@ def parse_vcf(contents, filename, date):
     soln = vc.getCoverSet()
     df = reset_index(vc.solution)
     
+    solution_samples = vc.sample_target_allele_cnt.reset_index()
+    
     if len(dropped_vars) == 0:
         return html.Div([
-            html.H5('VarCover Solution for: '.format(filename)),
+            html.H3('VarCover Results for: {}'.format(filename), 
+                    style={'textAlign': 'left', 
+                           'color': 'purple'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
+            html.H4('VarCover Solution Samples', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
+            dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
+            html.H4('VarCover Solution Matrix', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
-            html.H3('No Uncovered Variants'),
+            html.H4('No Uncovered Variants', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
             html.Hr(),  # horizontal line
         ])
     else:
         return html.Div([
-            html.H5('VarCover Solution for: '.format(filename)),
+           html.H3('VarCover Results for: {}'.format(filename), 
+                    style={'textAlign': 'left', 
+                           'color': 'purple'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
+            html.H4('VarCover Solution Samples', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
+            dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
+            html.H4('VarCover Solution Matrix', 
+                    style={'textAlign': 'left', 
+                       'color': 'purple'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
             html.H3('Uncovered Variants'),
             dt.DataTable(rows=dropped_vars.to_dict('records'), filterable=True),
             html.Hr(),  # horizontal line
         ])
-
-    
 
 
 # handle uploaded rsid file and pass to table parser
@@ -312,7 +354,8 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             parse_vcf(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
-    
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
