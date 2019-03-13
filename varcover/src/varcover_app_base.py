@@ -18,7 +18,7 @@ from varcover import *
 sys.path.append('/Users/ers/git/pandasVCF')
 from pandasvcf import *
 
-
+dropped_vars_rsid = pd.DataFrame()
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -28,19 +28,6 @@ colors = {
           'background': '#111111',
           'text': '#7FDBFF'
           }
-
-df = pd.read_csv(
-    'https://gist.githubusercontent.com/chriddyp/'
-    'c78bf172206ce24f77d6363a2d754b59/raw/'
-    'c353e8ef842413cae56ae3920b8fd78468aa4cb2/'
-    'usa-agricultural-exports-2011.csv')
-
-df1 = pd.read_csv(
-    'https://gist.githubusercontent.com/chriddyp/' +
-    '5d1ea79569ed194d432e56108a04d188/raw/' +
-    'a9f9e8076b837d541398e999dcbac2b2826a81f8/'+
-    'gdp-life-exp-2007.csv')
-
 
 
 app.layout = html.Div(children=[
@@ -109,7 +96,9 @@ app.layout = html.Div(children=[
     ### Displaying the uploaded results
 
         html.Div(id='output-data-upload'),
-        html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'}),
+    
+#         html.Div(dt.DataTable(rows=[{}], filterable=True, sortable=True), 
+#                  style={'display': 'none'}),
     
     
 ###  Inform the User of Option Submit RSID OR VCF
@@ -171,21 +160,21 @@ def parse_contents(contents, filename, date):
     try:
         if 'csv' in filename:
             # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
+            rsids = pd.read_csv(
                              io.StringIO(decoded.decode('utf-8')),
                              header=None)
-            df.columns = ['rsid']
+            rsids.columns = ['rsid']
         elif 'tsv' in filename:
             # Assume that the user uploaded a CSV file
-            df = pd.read_table(
+            rsids = pd.read_table(
                                io.StringIO(decoded.decode('utf-8')),
                                sep='\t',
                                header=None)
-            df.columns = ['rsid']
+            rsids.columns = ['rsid']
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-            df.columns = ['rsid']
+            rsids = pd.read_excel(io.BytesIO(decoded))
+            rsids.columns = ['rsid']
             
     except Exception as e:
         print(e)
@@ -193,7 +182,7 @@ def parse_contents(contents, filename, date):
             'There was an error processing this file.'
         ])
 
-    ensembl = EnsemblVar(df['rsid'].tolist())
+    ensembl = EnsemblVar(rsids['rsid'].tolist())
     
     rsid_bed = './rsid{}.bed'.format(str(random.random()).split('.')[-1])
     
@@ -216,19 +205,30 @@ def parse_contents(contents, filename, date):
     
     vc_soln = vc_soln.join(ensembl.rsid_bed[['rsid']], how='left').reset_index()
     
-    subprocess.run(['rm', rsid_bed])
+    #subprocess.run(['rm', rsid_bed],shell=True, check=True)
     df = vc_soln.sort_values(['CHROM', 'POS'])
     
-    return html.Div([
-        html.H5(filename),
-        html.H6(datetime.datetime.fromtimestamp(date)),
+    missing_rsids = set(rsids['rsid'].tolist()) - set(vc_soln.rsid.values)
+    
+    if len(missing_rsids) == 0:
+        return html.Div([
+            html.H5('VarCover Solution for: '.format(filename)),
+            html.H6(datetime.datetime.fromtimestamp(date)),
+            dt.DataTable(rows=df.to_dict('records'), filterable=True),
+            html.H3('No Uncovered Variants'),
+            html.Hr(),  # horizontal line
+        ])
+    else:
+        missing_rsids = pd.DataFrame([missing_rsids], columns=['rsid'])
+        return html.Div([
+            html.H5('VarCover Solution for: '.format(filename)),
+            html.H6(datetime.datetime.fromtimestamp(date)),
+            dt.DataTable(rows=df.to_dict('records'), filterable=True),
+            html.H3('Uncovered Variants'),
+            dt.DataTable(rows=missing_rsids.to_dict('records'), filterable=True),
 
-        # Use the DataTable prototype component:
-        # github.com/plotly/dash-table-experiments
-        dt.DataTable(rows=df.to_dict('records')),
-
-        html.Hr(),  # horizontal line
-    ])
+            html.Hr(),  # horizontal line
+        ])
 
 
 # parse uploaded file into table
@@ -263,26 +263,29 @@ def parse_vcf(contents, filename, date):
     df = expand_multiallele(v.df.copy())
     df = create_setcover_df(df)
     vc = varcover(df)
-    vc.getCoverSet()
+    dropped_vars = vc.dropped_vars.reset_index().rename(columns={0:'GT'})
+    soln = vc.getCoverSet()
     df = reset_index(vc.solution)
+    
+    if len(dropped_vars) == 0:
+        return html.Div([
+            html.H5('VarCover Solution for: '.format(filename)),
+            html.H6(datetime.datetime.fromtimestamp(date)),
+            dt.DataTable(rows=df.to_dict('records'), filterable=True),
+            html.H3('No Uncovered Variants'),
+            html.Hr(),  # horizontal line
+        ])
+    else:
+        return html.Div([
+            html.H5('VarCover Solution for: '.format(filename)),
+            html.H6(datetime.datetime.fromtimestamp(date)),
+            dt.DataTable(rows=df.to_dict('records'), filterable=True),
+            html.H3('Uncovered Variants'),
+            dt.DataTable(rows=dropped_vars.to_dict('records'), filterable=True),
+            html.Hr(),  # horizontal line
+        ])
 
-    return html.Div([
-        html.H5(filename),
-        html.H6(datetime.datetime.fromtimestamp(date)),
-
-        # Use the DataTable prototype component:
-        # github.com/plotly/dash-table-experiments
-        dt.DataTable(rows=df.to_dict('records')),
-
-        html.Hr(),  # horizontal line
-
-        # For debugging, display the raw contents provided by the web browser
-        #html.Div('Raw Content'),
-        #html.Pre(contents[0:200] + '...', style={
-        #    'whiteSpace': 'pre-wrap',
-        #    'wordBreak': 'break-all'
-        #})
-    ])
+    
 
 
 # handle uploaded rsid file and pass to table parser
@@ -310,7 +313,6 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
     
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)

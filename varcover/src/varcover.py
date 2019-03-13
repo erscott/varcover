@@ -5,7 +5,7 @@ from SetCoverPy import *
 
 
 class varcover(object):
-    '''varcover takes a dataframe variants_ids x allele count calls
+    '''varcover yields a min-cover set using variant_id x allele count call matrix
 
     Creates a covering set as self.solution using SetCoverPy
 
@@ -32,7 +32,7 @@ class varcover(object):
         '''This function drops variants with no coverage'''
         missing = self.df.sum(axis=1)
         missing = missing[missing<1]
-        self.missing = missing
+        self.dropped_vars = missing
         return self.df.drop(missing.index, axis=0)
 
 
@@ -47,7 +47,7 @@ class varcover(object):
         '''This function drops Samples with no variants of interest'''
         missing = df.sum(axis=0)
         missing = missing[missing<1]
-        self.missing = missing
+        self.dropped_samples= missing
         return df.drop(missing.index, axis=1)
 
 
@@ -85,7 +85,7 @@ class varcover(object):
                 g_s_df = pd.Series(g.s)
                 g_s_df.index = self.singletons_removed.columns
                 g_s_df = pd.DataFrame(g_s_df[g_s_df==True])
-            else:
+            else:  # occurs if reduceSingletons collects all samples in self.solution
                 self.solution = self.df.loc[self.solution.index, self.solution.columns]
                 return
         else:
@@ -149,18 +149,11 @@ class varcover(object):
         singletons = df[df.apply(sum, axis=1)<2].replace(0, np.NaN).stack()
         singletons_samples = singletons.index.get_level_values('sample_ids')
         singletons_vars = singletons.reset_index('sample_ids').index.unique()
-        singleton_and_assoc_vars = df.loc[:, singletons_samples] \
-                                    .replace(0, np.NaN).stack().reset_index('sample_ids')
+        singleton_and_assoc_vars = df.loc[singletons_vars, singletons_samples]
 
-        singletons_removed = df.drop(singleton_and_assoc_vars.index) \
+        singletons_removed = df.drop(singletons_vars) \
                                .drop(singletons_samples, axis=1)
-        if 'ID' in singleton_and_assoc_vars.columns:
-            pivot_index = ['CHROM', 'POS', 'REF', 'ALT', 'ID']
-        else:
-            pivot_index = ['CHROM', 'POS', 'REF', 'ALT']
-        singleton_and_assoc_vars = singleton_and_assoc_vars.pivot_table(index=pivot_index,
-                                          columns='sample_ids',
-                                          values=0).fillna(0)
+
         singletons_removed = self.dropMissingSamples(singletons_removed)
         self.singletons_removed = singletons_removed
         self.solution = singleton_and_assoc_vars
