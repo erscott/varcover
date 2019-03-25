@@ -49,7 +49,7 @@ if __name__ == '__main__':
     vcover = varcover(v_df)
     vcover.getCoverSet(cost=args.weight,
                        maxit=args.niters,
-                       reduceSingeltons=args.singletonReduction)
+                       reduceSingletons=args.singletonReduction)
 
     solution_df = vcover.solution
     print('{}: Samples required to cover {} alleles'.format(solution_df.shape[1],

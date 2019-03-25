@@ -68,7 +68,7 @@ class varcover(object):
         return
 
 
-    def getCoverSet(self, cost='standard', maxit=20, reduceSingeltons=True):
+    def getCoverSet(self, cost='standard', maxit=20, reduceSingletons=True):
         '''Creates a covering set using SetCoverPy
 
            Sets self.solution to covering set matrix.'''
@@ -90,7 +90,7 @@ class varcover(object):
 
         self.testing = 'testing'
 
-        if reduceSingeltons == True:
+        if reduceSingletons == True:
             self._reduceBySingletons()
             if len(self.singletons_removed) > 0:
                 costs = costs.loc[self.singletons_removed.columns]
@@ -116,7 +116,7 @@ class varcover(object):
             g_s_df.index = self.df.columns
             g_s_df = pd.DataFrame(g_s_df[g_s_df==True])
 
-        if reduceSingeltons == True and len(self.solution) > 0:
+        if reduceSingletons == True and len(self.solution) > 0:
             print(self.solution.head())
             print(self.df.head())
             self.solution = self.solution.join(self.df.loc[:, g_s_df.index],
