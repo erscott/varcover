@@ -1,4 +1,7 @@
-import os,sys,random
+import os
+import sys
+import random
+import gzip
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -9,6 +12,7 @@ import dash_table_experiments as dt
 import base64
 import datetime
 import io
+from io import StringIO
 
 sys.path.append('/Users/ers/docker/varcover/varcover/src/')
 from varcover_getvars import *
@@ -18,8 +22,6 @@ from varcover import *
 sys.path.append('/Users/ers/git/pandasVCF')
 from pandasvcf import *
 
-dropped_vars_rsid = pd.DataFrame()
-df = pd.DataFrame()
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -32,47 +34,117 @@ colors = {
 
 
 app.layout = html.Div(children=[
+
+  ### Header 
+    html.H1(children='Icahn School of Medicine at Mount Sinai',
+            style={'background-image': 'linear-gradient(to right,#00aeef,#d80b8c)',
+                  'color':'white',
+                  'font-size':22,
+                  'marginBottom': '0.0em',
+                  'marginTop': '1.0em',
+                  'padding-left':'5px'}),
+    
+    html.H1(children='Department of Genetics & Genomic Sciences',
+            style={'background-image': 'linear-gradient(to right,#00aeef,#d80b8c)',
+                  'color':'white',
+                  'font-size':22,
+                  'marginBottom': '4.0em',
+                  'marginTop': '0.0em',
+                  'textAlign':'right',
+                  'padding-right':'5px'}),
+    
+#      html.H1(children='Icahn School of Medicine at Mount Sinai', 
+#             style={'textAlign': 'left', 
+#                    'background-color': '#d80b8c',
+#                    'color':'white',
+#                    'font-size':24,
+#                    'marginBottom': '0.0em',
+#                    'padding-left':'5px'}),
+    
+#     html.H1(children='Department of Genetics & Genomic Sciences', 
+#             style={'textAlign': 'right', 
+#                    'background-color': '#00aeef',
+#                    'color':'white',
+#                    'font-size':24,
+#                    'marginTop': '0.0em',
+#                    'marginBottom': '4.0em',
+#                    'padding-right':'5px'}),
+    
+  ### Welcome & Caveats
     html.H1(children='Hello Welcome to the VarCover Web-Interface!', 
             style={'textAlign': 'center', 
-                   'color': 'purple'}),
+                   'color': '#d80b8c',
+                  'marginBottom': '1.5em'}),
+    
+    html.H5('Important Note: This is a public demonstration site and provides No Privacy Or Security Features.',
+            style={'textAlign':'center', 'color':'#00aeef',
+                  'marginBottom': '0.0em'}),
+    
+    html.H6('Consider using the VarCover package for tasks that require greater data privacy or security.',
+            style={'textAlign':'center', 'color':'#00aeef',
+                  'marginTop': '0.0em',
+                  'marginBottom': '5.0em'}),
 
     
-    html.H5('Important Note: This is a public demo site and provides No Privacy Or Security Features',
-            style={'textAlign':'center', 'color':'red'}),
-    html.H5('This website hosts 1000 Genomes Project Phase 3 data',
-            style={'textAlign':'center', 'color':'black'}), 
-    html.H3('Please select:',
-            style={'textAlign':'center', 'color':'black'}),
-    html.H4('1) Genome Build,',
-            style={'textAlign':'center', 'color':'black'}),
-    html.H4('2) RSID or VCF file,',
-            style={'textAlign':'center', 'color':'black'}),
-    html.H4('Finally, Click the Submit Button to run the VarCover Analysis',
-            style={'textAlign':'center', 'color':'black'}),
-        
-### DROP DOWN MENU    
-    html.H3('Genome Build', style={'textAlign': 'center',
-                                   'color':'purple'}),   
+    
+  ### INTERACTIVE COMPONENTS
+    html.H2('Please select:',
+            style={'textAlign':'center', 'color':'black',
+                  'padding-left':'0px'}),
+
+  ### DROP DOWN MENU COST METRIC    
+    html.Div(children = [html.H3(' Weighting Metric', style={'textAlign': 'center',
+                                   'color':'#d80b8c', 'marginBottom': '0.0em'}),  
+                        html.Abbr("help", title="Allele frequency logit increases the likelihood of additional alleles in the solution set with ~ similar sample sizes.")],
+                         style={'textAlign':'center', 'color':'blue', 'fontsize':40,
+                               'marginTop': '1.0em'}),
+    
     dcc.RadioItems(
       options=[
-             {'label': 'GRCh37', 'value': 'gr37'},
-             {'label': 'GRCh38', 'value': 'gr38'},
+             {'label': 'Standard', 'value': '1'},
+             {'label': 'Allele Frequency Logit', 'value': 'af'},
              ],
-      value='gr37',
-     style={'textAlign':'center',  'fontsize':40}),
+      value='1',
+     style={'textAlign':'center',  'fontsize':40,
+           'marginBottom': '2.0em'}),
+    
+
+    
+  ### DROP DOWN MENU  
+    
+    html.Div(children = [html.H3('Reduce Singletons Speedup', style={'textAlign': 'center',
+                                   'color':'#d80b8c', 'marginBottom': '0.0em'}),  
+                        html.Abbr("help", title="Reduces computational complexity by selecting all samples with singleton alleles prior to solving the min-set cover problem. Most helpful for target sets with >200 variants.")],
+                         style={'textAlign':'center', 'color':'blue', 'fontsize':40,
+                               'marginTop': '1.0em'}),
+             
+    dcc.RadioItems(
+      options=[
+             {'label': 'True', 'value': '0'},
+             {'label': 'False', 'value': '1'}],
+      value='0',
+      style={'textAlign':'center',  'fontsize':40,
+             'marginBottom':'2.5em'}),
     
     
-###  Inform the User to Submit RSID or VCF
+    html.H2('Finally, submit an RSID or VCF file for analysis:',
+            style={'textAlign':'center', 'color':'black',
+                  'padding-left':'0px'}),
+    
+    
+  ###  SUBMIT RSID OR VCF
   
-   html.H3('Submit an RSID file for 1KG Phase 3 Data', 
-            style={'textAlign': 'center', 
-                   'color': 'purple'}),
+    html.Div(children = [
+                
+            html.H3('RSID file for 1KG Phase 3 Analysis', 
+            style={'textAlign': 'center','marginBottom': '0.0em',
+                   'color': '#d80b8c'}),
+            html.Abbr("file format ex.", title="#1 rsid per line: .tsv, .csv, .txt file\nrs6500\nrs2032582\nrs56116432")],
+             
+            style={'textAlign':'center', 'color':'blue', 'fontsize':40,
+                               'marginTop': '0.0em'}),
     
-   html.H6('One RSID Per Line', 
-            style={'textAlign': 'center', 
-                   'color': 'black'}),
-    
-### UPLOAD RSID FILE     
+  ### UPLOAD RSID FILE     
        dcc.Upload(
        id='upload-data',
        children=html.Div([
@@ -95,33 +167,34 @@ app.layout = html.Div(children=[
         ),
 
     ### Displaying the uploaded results
-
         html.Div(id='output-data-upload'),
+        
     
-#         html.Div(dt.DataTable(rows=[{}], filterable=True, sortable=True), 
-#                  style={'display': 'none'}),
+  ###  RSID OR VCF
     
+    html.H3('---',
+            style={'textAlign':'center', 'color':'black'}),
     
-###  Inform the User of Option Submit RSID OR VCF
-    
-   html.H3('OR', 
+    html.H3('OR', 
             style={'textAlign': 'center', 
-                   'color': 'purple'}),
+                   'color': '#d80b8c'}),
+    html.H3('---',
+            style={'textAlign':'center', 'color':'black'}),
     
    html.H3('Submit a VCF file', 
             style={'textAlign': 'center', 
-                   'color': 'purple'}),
+                   'color': '#d80b8c'}),
     
    html.H6('VCF files: Please do not submit files with private health information or other privacy restrictions', 
             style={'textAlign': 'center', 
                    'color': 'black'}),
     
 
-    ### UPLOAD VCF FILE     
+  ### UPLOAD VCF FILE     
         dcc.Upload(
             id='upload-vcf',
             children=html.Div([
-                'VCF file: ',
+                'VCF(.gz) file: ',
                 'Drag and Drop or ',
                 html.A('Select Files')
             ]),
@@ -136,19 +209,80 @@ app.layout = html.Div(children=[
                 'margin': '0px'
             },
             # Allow multiple files to be uploaded
-            multiple=True
+            multiple=True,
+            max_size=1000000
         ),
     
-### Displaying the uploaded results
+    ### Displaying the uploaded results
     
     html.Div(id='output-vcf-upload'),
     html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'}),
-        
-
-])
-  
     
-   
+
+    html.Div(html.H3(
+                dcc.Link('This website hosts 1000 Genomes Project Phase 3 data',
+                         href=f'http://www.internationalgenome.org/'),
+            style={'textAlign':'center', 'color':'black',
+                  'marginBottom':'4.0em',
+                  'marginTop':'3.0em'})),
+    
+    html.H1(children='Icahn School of Medicine at Mount Sinai',
+            style={'background-image': 'linear-gradient(to right,#00aeef,#d80b8c)',
+                  'color':'white',
+                  'font-size':22,
+                  'marginBottom': '0.0em',
+                  'marginTop': '2.0em',
+                  'padding-left':'5px'}),
+    
+    html.H1(children='Department of Genetics & Genomic Sciences',
+            style={'background-image': 'linear-gradient(to right,#00aeef,#d80b8c)',
+                  'color':'white',
+                  'font-size':22,
+                  'marginBottom': '0.0em',
+                  'marginTop': '0.0em',
+                  'textAlign':'right',
+                  'padding-right':'5px'})
+
+    
+#     html.H1(children='Icahn School of Medicine at Mount Sinai', 
+#             style={'textAlign': 'right', 
+#                    'background-color': '#d80b8c',
+#                    'color':'white',
+#                    'font-size':22,
+#                    'marginBottom': '0.0em',
+#                    'marginTop': '5.0em',
+#                    'padding-right':'5px'}),
+    
+#     html.H1(children='Department of Genetics & Genomic Sciences', 
+#             style={'textAlign': 'left', 
+#                    'background-color': '#00aeef',
+#                    'color':'white',
+#                    'font-size':22,
+#                    'marginTop': '0.0em',
+#                    'padding-left':'5px'}),
+    
+#     html.H1(children='Icahn School of Medicine at Mount Sinai',
+#             style={'background-image': 'linear-gradient(to right,#d80b8c, #00aeef)',
+#                   'color':'white',
+#                   'font-size':22,
+#                   'marginBottom': '0.0em',
+#                   'marginTop': '0.0em',
+#                   'padding-left':'5px'}),
+#     html.H1(children='Department of Genetics & Genomic Sciences',
+#             style={'background-image': 'linear-gradient(to right,#00aeef,#d80b8c)',
+#                   'color':'white',
+#                   'font-size':22,
+#                   'marginBottom': '0.0em',
+#                   'marginTop': '0.0em',
+#                   'textAlign':'right',
+#                   'padding-right':'5px'}),
+    
+    
+    ]
+                     
+    )
+  
+
 ### FUNCTIONS FOR UPLOADING AND TABLE RENDERING
 
 # parse uploaded file into table
@@ -157,18 +291,28 @@ def parse_contents(contents, filename, date):
 
     decoded = base64.b64decode(content_string)
     try:
-        if 'csv' in filename:
+        if '.csv' in filename:
             # Assume that the user uploaded a CSV file
             rsids = pd.read_csv(
                              io.StringIO(decoded.decode('utf-8')),
-                             header=None)
+                             header=None,
+                             comment='#')
             rsids.columns = ['rsid']
-        elif 'tsv' in filename:
+        elif '.tsv' in filename:
             # Assume that the user uploaded a CSV file
             rsids = pd.read_table(
                                io.StringIO(decoded.decode('utf-8')),
                                sep='\t',
-                               header=None)
+                               header=None,
+                               comment='#')
+            df.columns = ['rsid']
+        elif '.txt' in filename:
+            # Assume that the user uploaded a CSV file
+            rsids = pd.read_table(
+                               io.StringIO(decoded.decode('utf-8')),
+                               sep='\t',
+                               header=None,
+                               comment='#')
             df.columns = ['rsid']
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
@@ -216,15 +360,15 @@ def parse_contents(contents, filename, date):
         return html.Div([
             html.H3('VarCover Results for: {}'.format(filename), 
                     style={'textAlign': 'left', 
-                           'color': 'purple'}),
+                           'color': '#00aeef'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
             html.H4('VarCover Solution Samples', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
             html.H4('VarCover Solution Matrix', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
             html.H3('No Uncovered Variants'),
             html.Hr(),  # horizontal line
@@ -234,19 +378,19 @@ def parse_contents(contents, filename, date):
         return html.Div([
              html.H3('VarCover Results for: {}'.format(filename), 
                     style={'textAlign': 'left', 
-                           'color': 'purple'}),
+                           'color': '#00aeef'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
             html.H4('VarCover Solution Samples', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
             html.H4('VarCover Solution Matrix', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
             html.H4('Uncovered Variants', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=missing_rsids.to_dict('records'), filterable=True),
 
             html.Hr(),  # horizontal line
@@ -256,8 +400,13 @@ def parse_contents(contents, filename, date):
 # parse uploaded file into table
 def parse_vcf(contents, filename, date):
     content_type, content_string = contents.split(',')
-
-    decoded = base64.b64decode(content_string)
+    
+    if '.gz' in filename:
+    
+        decoded = gzip.decompress(base64.b64decode(content_string))
+    else:
+        decoded = base64.b64decode(content_string)
+        
     try:
         if 'vcf' in filename:
   
@@ -295,34 +444,34 @@ def parse_vcf(contents, filename, date):
         return html.Div([
             html.H3('VarCover Results for: {}'.format(filename), 
                     style={'textAlign': 'left', 
-                           'color': 'purple'}),
+                           'color': '#00aeef'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
             html.H4('VarCover Solution Samples', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
             html.H4('VarCover Solution Matrix', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
             html.H4('No Uncovered Variants', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             html.Hr(),  # horizontal line
         ])
     else:
         return html.Div([
            html.H3('VarCover Results for: {}'.format(filename), 
                     style={'textAlign': 'left', 
-                           'color': 'purple'}),
+                           'color': '#00aeef'}),
             html.H6(datetime.datetime.fromtimestamp(date)),
             html.H4('VarCover Solution Samples', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
             html.H4('VarCover Solution Matrix', 
                     style={'textAlign': 'left', 
-                       'color': 'purple'}),
+                       'color': '#d80b8c'}),
             dt.DataTable(rows=df.to_dict('records'), filterable=True),
             html.H3('Uncovered Variants'),
             dt.DataTable(rows=dropped_vars.to_dict('records'), filterable=True),
@@ -342,6 +491,18 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
     
+    else:
+        
+        children = html.Div([
+            html.H5('Awaiting RSID Upload', 
+                    style={'textAlign': 'center', 
+                           'color': 'blue'}),
+            html.H6('(Max File Size is 1MB)', 
+                    style={'textAlign': 'center', 
+                           'color': 'blue'})])
+    
+        return children
+    
 
 # handle uploaded vcf file and pass to table parser
 @app.callback(Output('output-vcf-upload', 'children'),
@@ -353,10 +514,25 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         children = [
             parse_vcf(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
+        
         return children
+    
+    else:
+        
+        children = html.Div([
+            html.H5('Awaiting VCF Upload', 
+                    style={'textAlign': 'center', 
+                           'color': 'Blue'}),
+            html.H6('(Max File Size is 1MB)', 
+                    style={'textAlign': 'center', 
+                           'color': 'Blue'})])
+    
+        return children
+        
 
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
+    
     
