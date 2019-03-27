@@ -2,32 +2,38 @@ import os
 import sys
 import random
 import gzip
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
-import pandas as pd
-import plotly.graph_objs as go
-from dash.dependencies import Input, Output, State
-import dash_table_experiments as dt
 import base64
 import datetime
 import urllib
+import subprocess
 import io
 from io import StringIO
-import subprocess
+from pathlib import Path
 
-sys.path.append('/Users/ers/docker/varcover/varcover/src/')
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output, State
+import dash_table_experiments as dt
+
+import pandas as pd
+import plotly.graph_objs as go
+
+
+home = str(Path.home())
+sys.path.append(home + '/docker/varcover/varcover/src/')
 from varcover_getvars import *
 from varcover_preprocess import *
 from varcover import *
 
-sys.path.append('/Users/ers/git/pandasVCF')
+sys.path.append(home + '/git/pandasVCF')
 from pandasvcf import *
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.config['suppress_callback_exceptions'] = True
 
 colors = {
           'background': '#111111',
@@ -37,7 +43,7 @@ colors = {
 
 app.layout = html.Div(children=[
 
-  ### Header 
+  ### HEADER 
     html.H1(children='Icahn School of Medicine at Mount Sinai',
             style={'background-image': 'linear-gradient(to right,#00aeef,#d80b8c)',
                   'color':'white',
@@ -57,7 +63,7 @@ app.layout = html.Div(children=[
     
 
     
-  ### Welcome & Caveats
+  ### WELCOME & CAVEATS
     html.H1(children='Hello Welcome to the VarCover Web App!', 
             style={'textAlign': 'center', 
                    'color': '#d80b8c',
@@ -82,7 +88,7 @@ app.layout = html.Div(children=[
   ### DROP DOWN MENU COST METRIC    
     html.Div(children = [html.H3(' Weighting Metric', style={'textAlign': 'center',
                                    'color':'#d80b8c', 'marginBottom': '0.0em'}),  
-                        html.Abbr("help", title="Allele frequency logit weighting increases the likelihood of additional alleles in the solution set with ~ similar sample sizes.")],
+                        html.Abbr("hover for help", title="Allele frequency logit weighting increases the likelihood of additional alleles in the solution set with ~ similar sample sizes.")],
                          style={'textAlign':'center', 'color':'blue', 'fontsize':40,
                                'marginTop': '1.0em'}),
     
@@ -102,7 +108,7 @@ app.layout = html.Div(children=[
     
     html.Div(children = [html.H3('Reduce Singletons Speedup', style={'textAlign': 'center',
                                    'color':'#d80b8c', 'marginBottom': '0.0em'}),  
-                        html.Abbr("help", title="Reduces computational complexity by selecting all samples with singleton alleles prior to solving the min-set cover problem. Most helpful for target sets with >200 variants.")],
+                        html.Abbr("hover for help", title="Reduces computational complexity by selecting all samples with singleton alleles prior to solving the min-set cover problem. Most helpful for target sets with >200 variants.")],
                          style={'textAlign':'center', 'color':'blue', 'fontsize':40,
                                'marginTop': '1.0em'}),
              
@@ -158,25 +164,6 @@ app.layout = html.Div(children=[
     ### Displaying the uploaded results
     html.Div(id='output-data-upload'),
     
-    html.A(
-        'Download RSID Solution Set',
-        id='download-rsid-solution-link',
-        download="VarCover_RSID_solution_matrix.tsv",
-        href="",
-        target="_blank",
-        style={'font-size':24,
-              'textAlign':'right'}),
-    html.Br(),
-    
-     html.A(
-        'Download RSID Solution Sample List',
-        id='download-rsid-sample-link',
-        download="VarCover_RSID_sample_set.tsv",
-        href="",
-        target="_blank",
-        style={'font-size':24,
-              'textAlign':'right'}),
-        
     
   ###  RSID OR VCF
     
@@ -226,26 +213,8 @@ app.layout = html.Div(children=[
     html.Div(id='output-vcf-upload'),
     html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'}),
     
-    html.A(
-        'Download VCF Solution Matrix',
-        id='download-vcf-link',
-        download="VarCover_VCF_solution_matrix.tsv",
-        href="",
-        target="_blank",
-        style={'font-size':24,
-              'textAlign':'right'}),
     
-    html.Br(),
-    
-    html.A(
-        'Download VCF Solution Sample List',
-        id='download-vcf-sample-link',
-        download="VarCover_VCF_sample_set.tsv",
-        href="",
-        target="_blank",
-        style={'font-size':24,
-              'textAlign':'right'}),
-    
+  ### ATTRIBUTIONS AND FOOTER
 
     html.Div(html.H3(
                 dcc.Link('This website hosts 1000 Genomes Project Phase 3 data',
@@ -332,7 +301,7 @@ def parse_contents(contents, filename, date,
     
     ensembl.set_rsid_bed(rsid_bed)
     
-    gts = DaskBGT('/Users/ers/Documents/rawdata/1000g/phase3/hg19/bgt/',
+    gts = DaskBGT('~/Documents/rawdata/1000g/phase3/hg19/bgt/',
                   rsid_bed)
     gts = gts.get_setcover_df()
     vc = varcover(gts)
@@ -375,8 +344,12 @@ def parse_contents(contents, filename, date,
             html.H6(datetime.datetime.fromtimestamp(date)),
             html.H4('VarCover Solution Samples', 
                     style={'textAlign': 'left', 
-                       'color': '#d80b8c'}),
-        
+                           'color': '#d80b8c',
+                           'marginBottom':'0.0em'}),
+            html.H4('n={}'.format(solution_samples.shape[0]), 
+                    style={'textAlign': 'left', 
+                           'color': '#d80b8c',
+                           'marginTop':'0.0em'}),
             dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
         
             html.H4('VarCover Solution Matrix', 
@@ -388,9 +361,9 @@ def parse_contents(contents, filename, date,
     if len(missing_rsids) == 0:
         
         div.extend([html.H3('No Uncovered Variants'),
-                    html.Hr() ])
-        return html.Div(div)
-                         
+                    html.Br() 
+                   ])
+                   
     else:
                          
         missing_rsids = pd.DataFrame(missing_rsids, columns=['rsid'])
@@ -401,9 +374,35 @@ def parse_contents(contents, filename, date,
                                         'color': '#d80b8c'}),
                     dt.DataTable(rows=missing_rsids.to_dict('records'), 
                                        filterable=True),
-                    html.Hr()])  
+                    html.Br()
+                   ]) 
         
-        return html.Div(div)
+        
+    div.extend([html.A(
+                    html.Button('Download RSID Solution Samples', className='container',
+                                style={'color':'blue',
+                                       'textAlign':'center',
+                                       'width':'25%'}),
+                        id='download-rsid-sample-link',
+                        download="VarCover_RSID_sample_set.tsv",
+                        href="",
+                        target="_blank"),
+
+                html.Br(),
+
+                html.A(
+                     html.Button('Download RSID Solution Matrix', className='container',
+                                      style={'color':'blue',
+                                             'textAlign':'center',
+                                             'width':'25%'}),
+                        id='download-rsid-solution-link',
+                        download="VarCover_RSID_solution_matrix.tsv",
+                        href="",
+                        target="_blank"), 
+                html.Hr()
+                ])
+        
+    return html.Div(div)
 
 
     
@@ -472,12 +471,18 @@ def parse_vcf(contents, filename, date,
             html.H6(datetime.datetime.fromtimestamp(date)),
             html.H4('VarCover Solution Samples', 
                     style={'textAlign': 'left', 
-                       'color': '#d80b8c'}),
+                           'color': '#d80b8c',
+                           'marginBottom':'0.0em'}),
+            html.H4('n={}'.format(solution_samples.shape[0]), 
+                    style={'textAlign': 'left', 
+                           'color': '#d80b8c',
+                           'marginTop':'0.0em'}),
             dt.DataTable(rows=solution_samples.to_dict('records'), filterable=True),
             html.H4('VarCover Solution Matrix', 
                     style={'textAlign': 'left', 
                        'color': '#d80b8c'}),
-            dt.DataTable(rows=df.to_dict('records'), filterable=True)]
+            dt.DataTable(rows=df.to_dict('records'), filterable=True)
+            ]
     
     
     if len(dropped_vars) == 0:
@@ -485,17 +490,49 @@ def parse_vcf(contents, filename, date,
         div.extend([html.H4('No Uncovered Variants', 
                             style={'textAlign': 'left', 
                                    'color': '#d80b8c'}),
-                     html.Hr()])
+                     html.Br()
+                   ])
         
         return html.Div(div)
     
     else:
-        div.extend([html.H3('Uncovered Variants'),
+        div.extend([html.H3('Uncovered Variants', 
+                            style={'textAlign': 'left', 
+                                   'color': '#d80b8c'}),
                     dt.DataTable(rows=dropped_vars.to_dict('records'), 
                                  filterable=True),
-                    html.Hr()])
+                    html.Br()
+                   
+                   ])
         
-        return html.Div(div)
+    
+    div.extend([html.A(
+                    html.Button('Download VCF Solution Samples', className='container',
+                                style={'color':'blue',
+                                       'textAlign':'center',
+                                       'width':'25%'}),
+                        id='download-vcf-sample-link',
+                        download="VarCover_VCF_sample_set.tsv",
+                        href="",
+                        target="_blank",
+                        style={'font-size':24,
+                              'textAlign':'right'}),
+
+                html.Br(),
+
+                html.A(
+                     html.Button('Download VCF Solution Matrix', className='container',
+                                      style={'color':'blue',
+                                             'textAlign':'center',
+                                             'width':'25%'}),
+                        id='download-vcf-link',
+                        download="VarCover_VCF_solution_matrix.tsv",
+                        href="",
+                        target="_blank"), 
+                html.Hr()
+                ])
+    
+    return html.Div(div)
 
 
     
@@ -569,7 +606,7 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][7]['props']['rows']
+        data = parse_child[0]['props']['children'][8]['props']['rows']
         df = pd.DataFrame(data)
 
         if 'rsid' in df.columns:
@@ -600,7 +637,7 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][5]['props']['rows']
+        data = parse_child[0]['props']['children'][6]['props']['rows']
         df = pd.DataFrame(data)
         df = df[['sample_ids', 'Target Allele Count']]
         return df
@@ -622,7 +659,7 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][7]['props']['rows']
+        data = parse_child[0]['props']['children'][8]['props']['rows']
         df = pd.DataFrame(data)
 
         if 'rsid' in df.columns:
@@ -653,7 +690,7 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][5]['props']['rows']
+        data = parse_child[0]['props']['children'][6]['props']['rows']
         df = pd.DataFrame(data)
         df = df[['sample_ids', 'Target Allele Count']]
         return df
@@ -667,6 +704,6 @@ def update_download_link(results):
         
         
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
     
     
