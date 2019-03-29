@@ -4,7 +4,7 @@ import pandas as pd
 #Import pdVCFsingle package
 homePath = os.path.expanduser('~')
 
-PANDAS_VCF_SRC_DIR = '/Users/ers/git/pandasVCF/'
+PANDAS_VCF_SRC_DIR = homePath + '/git/pandasVCF/'
 sys.path.append( PANDAS_VCF_SRC_DIR )
 from pandasvcf import *
 pd.options.mode.chained_assignment = None #supressing the chained assignment warnings
