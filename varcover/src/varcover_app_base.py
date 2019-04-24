@@ -272,20 +272,20 @@ def parse_contents(contents, filename, date,
             rsids.columns = ['rsid']
         elif '.tsv' in filename:
             # Assume that the user uploaded a CSV file
-            rsids = pd.read_table(
+            rsids = pd.read_csv(
                                io.StringIO(decoded.decode('utf-8')),
                                sep='\t',
                                header=None,
                                comment='#')
-            df.columns = ['rsid']
+            rsids.columns = ['rsid']
         elif '.txt' in filename:
             # Assume that the user uploaded a CSV file
-            rsids = pd.read_table(
+            rsids = pd.read_csv(
                                io.StringIO(decoded.decode('utf-8')),
                                sep='\t',
                                header=None,
                                comment='#')
-            df.columns = ['rsid']
+            rsids.columns = ['rsid']
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             rsids = pd.read_excel(io.BytesIO(decoded))

@@ -59,7 +59,8 @@ class EnsemblVar(object):
         ensembl_json = self.ensembl_json
         genos = []
         for rsid in ensembl_json.keys():
-            mappings = pd.DataFrame(ensembl_json[rsid]['mappings'], index=[rsid])
+            mappings = pd.DataFrame(ensembl_json[rsid]['mappings'])
+            mappings.index = [rsid] * mappings.shape[0]
             minor_allele = ensembl_json[rsid]['minor_allele']
 
             if self.genotypes:
@@ -90,7 +91,8 @@ class EnsemblVar(object):
             """
             loc = loc.strip().split(':')
             list_loc = [loc[0]]
-            list_loc.extend(loc[1].split('-'))
+            pos = sorted([int(l) for l in loc[1].split('-')])
+            list_loc.extend([str(p) for p in pos])
 
             return list_loc
 
@@ -129,7 +131,7 @@ class DaskBGT(object):
     """Retrive variants intersecting bed file in bgt_dir files
     """
     def __init__(self, bgt_dir, bed,
-                bgt_bin='~/git/bgt/bgt'):
+                bgt_bin='/home/ubuntu/git/bgt/bgt'):
 
         self.set_bgts_from_dir(bgt_dir)
         self.bed = bed
@@ -206,7 +208,7 @@ class DaskBGT(object):
 
             def _get_sampleids():
 
-                arg = [self.bgt_bin, 'view', args, file_path, '|grep CHROM']
+                arg = [self.bgt_bin, 'view', args, file_path, '| grep "CHROM" ']
                 arg = " ".join(arg)
                 p0 = subprocess.Popen(arg, shell=True, stdout=subprocess.PIPE)
                 sampleids = p0.communicate()[0].decode('utf-8').rstrip('\n').split('\t')[9:]
