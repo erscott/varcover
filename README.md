@@ -9,12 +9,17 @@ VarCover employs the:
 
 to efficiently solve the min-set cover problem. 
 
+## Set Cover Diagram
+![alt text](https://github.com/erscott/varcover/blob/dev/varcover/data/coverset.jpeg)
+
 ## Dependencies  
 * python ≥3.6  
 * numpy  
 * pandas  
 * SetCoverPy  
 * pandasVCF
+* tabix
+* bgzip
 
 <br>
 
@@ -29,12 +34,14 @@ VarCover CLI accepts a VCF file containing the variants of interest and availabl
 | -n, --niters (integer) | number of PySetCover iterations      |  20  |
 | -o, --output_dir (/path/to/dir) | specifies output directory      |  current working directory  |    
 
+
 ### Optional arguments:
 1) -w, --weight: whether sample weights derived from the minor allele frequency spectrum
     * Sample weights derived from the minor allele frequency spectrum can increase the number of variants in the solution set, though it may also break the minimum set cover requirement.  Experiments with ~250 variants led to an increase in the solution sample size by 1.
 
 2) -s, --singletonReduction: whether pre-selection of singleton samples should be used.
     * Pre-selection of samples possessing singleton target alleles may reduce computational processing time if the target set size exceeds 100 alleles.
+
 
 ### Output:
 Three files will be created based upon the VarCover solution set:
