@@ -21,13 +21,13 @@ to efficiently solve the min-set cover problem.
 ## Command Line Interface
 VarCover CLI accepts a VCF file containing the variants of interest and available samples.  
 
-| Argument               | Description      |   
-| -----------------------|:----------------:| 
-| vcf                    | path to vcf      | 
-| -w, --weight (standard/logit)           | use sample allele frequency weighting      |   
-| -s, --singletonReduction | use singleton reduction modification      |    
-| -n, --niters (integer) | number of PySetCover iterations      |    
-| -o, --output_dir (/path/to/dir) | specifies output directory      |    
+| Argument               | Description      | Default      |   
+| -----------------------|:----------------:| :----------------:|
+| vcf                    | path to vcf      |    -     |
+| -w, --weight (standard/logit)           | use sample allele frequency weighting |  standard  |   
+| -s, --singletonReduction | use singleton reduction modification      |  singletonReduction off  |
+| -n, --niters (integer) | number of PySetCover iterations      |  20  |
+| -o, --output_dir (/path/to/dir) | specifies output directory      |  current working directory  |    
 
 ### Optional arguments:
 1) -w, --weight: whether sample weights derived from the minor allele frequency spectrum
