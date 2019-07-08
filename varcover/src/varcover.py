@@ -10,15 +10,11 @@ class varcover(object):
     Creates a covering set as self.solution using SetCoverPy
 
     ToDo:
-       1) Implement calculate cost
-       2) Identify fixed alt alleles (zero hom-ref)
-       3) Implement multiple runs to generate set with best enrichment of rare alleles
-       4) Implement report
-           4a) Implement clustermap for solution
-           4b) Implement summary stats regarding number of rare alleles
-           4c) Number of samples
-           4d) Variants not covered
-
+       0) Implement multiple runs to generate set with best enrichment of rare alleles
+       1) Implement report
+           1a) Implement clustermap for solution
+           1b) Implement summary stats regarding number of rare alleles
+           1c) Number of samples
     '''
     def __init__(self, df):
 
@@ -65,6 +61,7 @@ class varcover(object):
                                               .stack().reset_index() \
                                               .groupby(['CHROM', 'POS', 'REF', 'ALT'])['sample_ids'] \
                                               .count().sort_values(ascending=False))
+        #self.target_allele_cnt = self.solution # debugging
         return
 
 
@@ -103,7 +100,8 @@ class varcover(object):
                 g_s_df.index = self.singletons_removed.columns
                 g_s_df = pd.DataFrame(g_s_df[g_s_df==True])
             else:  # occurs if reduceSingletons collects all samples in self.solution
-                self.solution = self.df.loc[self.solution.index, self.solution.columns]
+                self.solution = self.df.loc[self.solution.index,
+                                            self.solution.columns]
                 self.setTargetAlleleCount()
                 self.setSampleTargetAlleleCount()
                 return
@@ -166,7 +164,8 @@ class varcover(object):
 
     def _reduceBySingletons(self):
         '''Isolates samples with singleton variants and
-           constructs setcover input dataframe with remaining variants and samples
+           constructs setcover input dataframe with remaining variants
+           and samples
            '''
         df = self.df.copy()
         singletons = df[df.apply(sum, axis=1)<2].replace(0, np.NaN).stack()

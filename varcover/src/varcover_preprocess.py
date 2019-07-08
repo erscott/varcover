@@ -1,5 +1,6 @@
-import sys, os
+import sys, os, json
 import pandas as pd
+
 
 #Import pdVCFsingle package
 homePath = os.path.expanduser('~')
@@ -116,7 +117,8 @@ def expand_multiallele(df):
         df = df.drop(ma_df.index).reset_index()
 
         ma_df.reset_index(inplace=True)
-        ma_df.loc[:, ['newALT', 'newGT1', 'newGT2']] = [i for i in map(clean_alt,                                                       ma_df[['REF', 'a1', 'a2', 'phase']].values)]
+        ma_df.loc[:, ['newALT', 'newGT1', 'newGT2']] = [i for i in map(clean_alt,
+                                                        ma_df[['REF', 'a1', 'a2', 'phase']].values)]
         ma_df = ma_df[ma_df.newALT.str.contains(',')]
 
         # Triage through fast vector or slow for loop
