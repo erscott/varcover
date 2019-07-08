@@ -80,7 +80,7 @@ class varcover(object):
         costs = pd.Series(costs)
         costs.index = self.df.columns
         self.costs = costs
-
+        self.df = self.df.astype(np.int)
 
         print("Solving Set Cover Now:")
 

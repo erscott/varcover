@@ -114,7 +114,9 @@ def expand_multiallele(df):
     df.loc[:, 'newGT2'] = df['GT2'].astype(int)
     ma_df = df.query('multiallele>0')
     if len(ma_df) > 0:
-        df = df.drop(ma_df.index).reset_index()
+        df = df.drop(ma_df.index)
+        df = df.astype('category')
+        df = reset_index(df)
 
         ma_df.reset_index(inplace=True)
         ma_df.loc[:, ['newALT', 'newGT1', 'newGT2']] = [i for i in map(clean_alt,

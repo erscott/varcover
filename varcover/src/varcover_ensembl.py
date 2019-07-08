@@ -55,7 +55,9 @@ class EnsemblVar(object):
         for rsid_batch in range(0,len(self.rsids), 200):
             self.ensembl_json = self._post_ensemblvar(self.rsids[rsid_batch:rsid_batch+200])
             ensembl_res.append(self.extract_1KG_genotypes())
-        return pd.concat(ensembl_res)
+        ensembl_res = pd.concat(ensembl_res)
+        ensembl_res = ensembl_res.astype('category')
+        return ensembl_res
 
 
     def _post_ensemblvar(self, rs_batch):
@@ -91,15 +93,15 @@ class EnsemblVar(object):
         ensembl_json = self.ensembl_json
         genos = []
         for rsid in ensembl_json.keys():
-            mappings = pd.DataFrame(ensembl_json[rsid]['mappings'])
+            mappings = pd.DataFrame(ensembl_json[rsid]['mappings']).astype('category')
             mappings.index = [rsid] * mappings.shape[0]
             minor_allele = ensembl_json[rsid]['minor_allele']
             var_class = ensembl_json[rsid]['var_class']
 
             if self.genotypes:
                 df_geno = pd.DataFrame(ensembl_json[rsid]['genotypes'])
-                df_geno = df_geno[df_geno['sample'].str.contains('1000G')]
-                df_geno.loc[:, 'sample_ids'] = df_geno['sample'].str.split(':').str[-1]
+                df_geno = df_geno[df_geno['sample'].str.contains('1000G')].astype('category')
+                df_geno.loc[:, 'sample_ids'] = df_geno['sample'].str.split(':').str[-1].astype('category')
                 df_geno.loc[:, 'minor_allele'] = minor_allele
                 df_geno.loc[:, 'rsid'] = rsid
                 df_geno.loc[:, 'var_class'] = var_class
@@ -118,7 +120,7 @@ class EnsemblVar(object):
                                        'location', 'strand', 'rsid',
                                        'var_class']])
 
-        return pd.concat(genos, sort=False)
+        return pd.concat(genos, sort=False).astype('category')
 
 
     def split_multiallelic(self):
@@ -176,12 +178,14 @@ class EnsemblVar(object):
             return split_alleles
 
         df = self.ensembl_res.copy()
-        df = self._add_reference_sequence_to_ensembl(df, genome=self.genome)
-        df.loc[:, 'ref'] = df['allele_string'].str.split('/').str[0]  #assumes first allele in allele_string is reference base
-        bialleles = df.groupby('rsid').apply(_expand_ensembl_multiallele_string)
-        df = pd.concat([pd.concat(res) for res in bialleles])
-        df = df.set_index('query_rsid')
-        self.ensembl_res = df
+        self.ensembl_res = self._add_reference_sequence_to_ensembl(df, genome=self.genome)
+        del df
+        self.ensembl_res.loc[:, 'ref'] = self.ensembl_res['allele_string'].str \
+                                              .split('/').str[0]\
+                                              .astype('category')  #assumes first allele in allele_string is reference base
+        bialleles = self.ensembl_res.groupby('rsid').apply(_expand_ensembl_multiallele_string)
+        self.ensembl_res = pd.concat([pd.concat(res) for res in bialleles]).astype('category')
+        self.ensembl_res = self.ensembl_res.set_index('query_rsid')
         self.multiallelics_split = True
         return
 
@@ -259,26 +263,26 @@ class EnsemblVar(object):
             self.split_multiallelic()
             df = self.ensembl_res
 
-        df_snp = df[df['var_class']=='SNP']
+        df_snp = df[df['var_class']=='SNP'].astype('category')
         df_snp.loc[:, 'vcfalt'] = df_snp['alt']
         df_snp.loc[:, 'vcfPOS'] = df_snp['location'].str.split(':').str[1] \
                                       .str.split('-').str[0].astype(int)
         df_snp.loc[:, 'vcfCHROM'] = df_snp['location'].str.split(':').str[0]
 
-        df_ins = df[df['var_class']=='insertion']
-        df_ins.loc[:, 'vcfalt'] = df_ins['vcfref'] + df_ins['alt']  #adds prepended bases
+        df_ins = df[df['var_class']=='insertion'].astype('category')
+        df_ins.loc[:, 'vcfalt'] = df_ins['vcfref'].astype(str) + df_ins['alt'].astype(str)  #adds prepended bases
         df_ins.loc[:, 'vcfPOS'] = df_ins['location'].str.split(':').str[1] \
                                       .str.split('-').str[1].astype(int)
         df_ins.loc[:, 'vcfCHROM'] = df_ins['location'].str.split(':').str[0]
 
-        df_del = df[df['var_class']=='deletion']
+        df_del = df[df['var_class']=='deletion'].astype('category')
         df_del.loc[:, 'vcfalt'] = df_del['vcfref'].str[0]
         df_del.loc[:, 'vcfPOS'] = df_del['location'].str.split(':').str[1] \
                                       .str.split('-').str[0].astype(int) - 1
         df_del.loc[:, 'vcfCHROM'] = df_del['location'].str.split(':').str[0]
 
 
-        self.ensembl_res = pd.concat([df_snp, df_ins, df_del])
+        self.ensembl_res = pd.concat([df_snp, df_ins, df_del]).astype('category')
         self.vcf_coords = True
         return
 
@@ -338,10 +342,9 @@ class EnsemblVar(object):
                                          'vcfalt':'ALT'},
                                 inplace=True)
 
-        return self.ensembl_res.pivot_table(index=['rsid', 'query_rsid','var_class',
-                                                   'CHROM', 'POS', 'REF', 'ALT'],
-                                            columns='sample_ids',
-                                            values='GTsum')
+        return self.ensembl_res.groupby(['rsid', 'query_rsid','var_class',\
+                                        'CHROM', 'POS', 'REF', 'ALT',\
+                                         'sample_ids'])['GTsum'].sum().unstack().fillna(0)
 
 
     def set_rsid_bed(self,

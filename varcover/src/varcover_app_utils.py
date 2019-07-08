@@ -89,10 +89,11 @@ def parse_contents(contents, filename, date,
     vc = varcover(gts)
     vc.getCoverSet(cost=cost_metric,
                    reduceSingletons=reduce_singletons)
+    del gts
+    del ensembl
+    vc_soln = reset_index(vc.solution)
 
-    vc_soln = vc.solution.reset_index()
-
-    df = vc_soln.sort_values(['CHROM', 'POS'])
+    vc_soln = vc_soln.sort_values(['CHROM', 'POS'])
 
     missing_rsids = list(set(rsids['rsid'].tolist()) - set(vc_soln.query_rsid.values))
 
@@ -127,7 +128,7 @@ def parse_contents(contents, filename, date,
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(rows=df.to_dict('records'), filterable=True)
+            dt.DataTable(rows=vc_soln.to_dict('records'), filterable=True)
            ]
 
     if len(missing_rsids) == 0:
@@ -221,14 +222,14 @@ def parse_vcf(contents, filename, date,
             'There was an error processing this file.'
               ])
 
-    df = expand_multiallele(v.df.copy())
-    df = create_setcover_df(df)
-    vc = varcover(df)
+    v.df = expand_multiallele(v.df)
+    v.df = create_setcover_df(v.df)
+    vc = varcover(v.df)
     dropped_vars = vc.dropped_vars.reset_index().rename(columns={0:'GT'})
     soln = vc.getCoverSet(cost=cost_metric,
                           reduceSingletons=reduce_singletons)
 
-    df = reset_index(vc.solution)
+    v.df = reset_index(vc.solution)
 
     solution_samples = vc.sample_target_allele_cnt.reset_index()
 
@@ -256,7 +257,7 @@ def parse_vcf(contents, filename, date,
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(rows=df.to_dict('records'), filterable=True)
+            dt.DataTable(rows=v.df.to_dict('records'), filterable=True)
             ]
 
 
