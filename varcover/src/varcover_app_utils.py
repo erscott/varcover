@@ -122,13 +122,18 @@ def parse_contents(contents, filename, date,
                     style={'textAlign': 'left',
                            'color': '#d80b8c',
                            'marginTop':'0.0em'}),
-            dt.DataTable(rows=solution_samples.to_dict('records'),
-                         filterable=True),
+            dt.DataTable(data=solution_samples.to_dict('records'),
+                         columns=[{'id': c, 'name': c} for c in solution_samples.columns],
+                         style_table={'overflowX': 'scroll',
+                                      'maxHeight': '300px'}),
 
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(rows=vc_soln.to_dict('records'), filterable=True)
+            dt.DataTable(data=vc_soln.to_dict('records'),
+                        columns=[{'id': c, 'name': c} for c in vc_soln.columns],
+                         style_table={'overflowX': 'scroll',
+                                      'maxHeight': '300px'})
            ]
 
     if len(missing_rsids) == 0:
@@ -145,8 +150,10 @@ def parse_contents(contents, filename, date,
         div.extend([html.H4('Uncovered Variants',
                             style={'textAlign': 'left',
                                         'color': '#d80b8c'}),
-                    dt.DataTable(rows=missing_rsids.to_dict('records'),
-                                       filterable=True),
+                    dt.DataTable(data=missing_rsids.to_dict('records'),
+                                columns=[{'id': c, 'name': c} for c in missing_rsids.columns],
+                                style_table={'overflowX': 'scroll',
+                                                    'maxHeight': '300px'}),
                     html.Br()
                    ])
 
@@ -252,12 +259,17 @@ def parse_vcf(contents, filename, date,
                     style={'textAlign': 'left',
                            'color': '#d80b8c',
                            'marginTop':'0.0em'}),
-            dt.DataTable(rows=solution_samples.to_dict('records'),
-                         filterable=True),
+            dt.DataTable(data=solution_samples.to_dict('records'),
+                         columns=[{'id': c, 'name': c} for c in solution_samples.columns],
+                         style_table={'overflowX': 'scroll',
+                                      'maxHeight': '300px'}),
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(rows=v.df.to_dict('records'), filterable=True)
+            dt.DataTable(data=v.df.to_dict('records'),
+                        columns=[{'id': c, 'name': c} for c in v.df.columns],
+                         style_table={'overflowX': 'scroll',
+                                      'maxHeight': '300px'})
             ]
 
 
@@ -273,8 +285,10 @@ def parse_vcf(contents, filename, date,
         div.extend([html.H3('Uncovered Variants',
                             style={'textAlign': 'left',
                                    'color': '#d80b8c'}),
-                    dt.DataTable(rows=dropped_vars.to_dict('records'),
-                                 filterable=True),
+                    dt.DataTable(data=dropped_vars.to_dict('records'),
+                                 columns=[{'id': c, 'name': c} for c in dropped_vars.columns],
+                                 style_table={'overflowX': 'scroll',
+                                              'maxHeight': '300px'}),
                     html.Br()
 
                    ])
