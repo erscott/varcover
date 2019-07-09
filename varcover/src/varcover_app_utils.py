@@ -17,7 +17,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-import dash_table_experiments as dt
+import dash_table as dt
 
 import plotly.graph_objs as go
 
@@ -269,8 +269,6 @@ def parse_vcf(contents, filename, date,
                      html.Br()
                    ])
 
-        return html.Div(div)
-
     else:
         div.extend([html.H3('Uncovered Variants',
                             style={'textAlign': 'left',
@@ -291,9 +289,7 @@ def parse_vcf(contents, filename, date,
                         id='download-vcf-sample-link',
                         download="VarCover_VCF_sample_set.tsv",
                         href="",
-                        target="_blank",
-                        style={'font-size':24,
-                              'textAlign':'right'}),
+                        target="_blank"),
 
                 html.Br(),
 
