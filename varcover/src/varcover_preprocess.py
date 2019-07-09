@@ -36,7 +36,6 @@ def clean_alt(ref_a1_a2_phase):
 
 def expand_multiallele(df):
 
-
     def alt_count(df):
         '''Count max number of alternative alleles'''
         return df['ALT'].str.count(',').max()
