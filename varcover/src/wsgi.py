@@ -1,3 +1,3 @@
-from varcover_app_base import app
+from varcover_app import app
 
 application = app.server

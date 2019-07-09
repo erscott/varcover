@@ -238,7 +238,8 @@ app.layout = html.Div(children=[
     ### Displaying the uploaded results
 
     html.Div(id='output-vcf-upload'),
-    html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'}),
+    html.Div(dt.DataTable(data=pd.DataFrame().to_dict('records'),
+                          style_table={'overflowX': 'scroll'})),
 
 
   ### ATTRIBUTIONS AND FOOTER
@@ -343,7 +344,7 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][8]['props']['rows']
+        data = parse_child[0]['props']['children'][8]['props']['data']
         df = pd.DataFrame(data)
 
         if 'query_rsid' in df.columns:
@@ -374,7 +375,7 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][6]['props']['rows']
+        data = parse_child[0]['props']['children'][6]['props']['data']
         df = pd.DataFrame(data)
         df = df[['sample_ids', 'Target Allele Count']]
         return df
@@ -396,7 +397,8 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][8]['props']['rows']
+
+        data = parse_child[0]['props']['children'][8]['props']['data']
         df = pd.DataFrame(data)
 
         if 'rsid' in df.columns:
@@ -427,7 +429,7 @@ def update_download_link(results):
         """Extracts datatable data into pandas df from
         output-data-upload
         """
-        data = parse_child[0]['props']['children'][6]['props']['rows']
+        data = parse_child[0]['props']['children'][6]['props']['data']
         df = pd.DataFrame(data)
         df = df[['sample_ids', 'Target Allele Count']]
         return df
