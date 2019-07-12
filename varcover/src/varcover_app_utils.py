@@ -358,7 +358,10 @@ def parse_vcf(contents, filename, date,
 
 
     varcover_solution_samples_tsv_str = tsv_stringify(solution_samples, 'solution_samples')
-    varcover_solution_matrix_tsv_str = tsv_stringify(v.df, 'solution_matrix')
+    print(len(varcover_solution_samples_tsv_str), type(varcover_solution_samples_tsv_str))
+
+    # varcover_solution_matrix_tsv_str = tsv_stringify(v.df, 'solution_matrix')
+    # print(len(varcover_solution_matrix_tsv_str), type(varcover_solution_matrix_tsv_str))
     div.extend([html.Br(),
                 html.A(
                     html.Button('Download VCF Solution Samples',
@@ -373,17 +376,17 @@ def parse_vcf(contents, filename, date,
 
                 html.Br(),
 
-                html.A(
-                                 html.Button('Download VCF Solution Matrix',
-                                                  className='container',
-                                                  style={'color':'blue',
-                                                         'textAlign':'center',
-                                                         'width':'25%'}),
-                                    id='download-vcf-link',
-                                    download="VarCover_VCF_solution_matrix.tsv",
-                                    href=varcover_solution_matrix_tsv_str,
-                                    target="_blank"),
-                            html.Hr()
+                # html.A(
+                #                  html.Button('Download VCF Solution Matrix',
+                #                                   className='container',
+                #                                   style={'color':'blue',
+                #                                          'textAlign':'center',
+                #                                          'width':'25%'}),
+                #                     id='download-vcf-link',
+                #                     download="VarCover_VCF_solution_matrix.tsv",
+                #                     href=varcover_solution_matrix_tsv_str,
+                #                     target="_blank"),
+                html.Hr()
                 ])
 
     print('returning html.Div')
