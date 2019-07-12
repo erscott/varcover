@@ -34,7 +34,7 @@ class EnsemblVar(object):
 
     def __init__(self, rsids,
                  genome='gr37', genotypes=False):
-
+        print('rsid file received')  
         self.genome = genome
         self.genotypes = genotypes
         self.rsids = rsids
@@ -45,6 +45,7 @@ class EnsemblVar(object):
         assert self.ensembl_res['strand'].unique() == 1 #ensures all variants are + strand
 
 
+        print('ensembl_res generated')
 
     def get_ensembl_res(self):
         """Retrieves ensembl variant data in batches of 200 variants
@@ -53,7 +54,9 @@ class EnsemblVar(object):
 
         ensembl_res = []
         for rsid_batch in range(0,len(self.rsids), 200):
+            print('submitting {}-{} rsids to ensembl api'.format(rsid_batch, rsid_batch+200))
             self.ensembl_json = self._post_ensemblvar(self.rsids[rsid_batch:rsid_batch+200])
+            print('Extracting 1KG genotypes')
             ensembl_res.append(self.extract_1KG_genotypes())
         ensembl_res = pd.concat(ensembl_res)
         ensembl_res = ensembl_res.astype('category')

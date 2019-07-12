@@ -130,7 +130,7 @@ def parse_contents(contents, filename, date,
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(data=vc_soln.to_dict('records'),
+            dt.DataTable(data=vc_soln.head(10).to_dict('records'),
                         columns=[{'id': c, 'name': c} for c in vc_soln.columns],
                          style_table={'overflowX': 'scroll',
                                       'maxHeight': '300px'})
@@ -183,7 +183,7 @@ def parse_contents(contents, filename, date,
                         target="_blank"),
                 html.Hr()
                 ])
-
+    print('Returning html.Div')
     return html.Div(div)
 
 
@@ -266,7 +266,7 @@ def parse_vcf(contents, filename, date,
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(data=v.df.to_dict('records'),
+            dt.DataTable(data=v.df.head(10).to_dict('records'),
                         columns=[{'id': c, 'name': c} for c in v.df.columns],
                          style_table={'overflowX': 'scroll',
                                       'maxHeight': '300px'})
@@ -319,5 +319,5 @@ def parse_vcf(contents, filename, date,
                         target="_blank"),
                 html.Hr()
                 ])
-
+    print('returning html.Div')
     return html.Div(div)

@@ -39,7 +39,7 @@ external_stylesheets = ['./data/bWLwgP.css']
 server = Flask(__name__)
 
 app = dash.Dash(__name__,server=server, external_stylesheets=external_stylesheets)
-app.config['suppress_callback_exceptions'] = True
+#app.config['suppress_callback_exceptions'] = True
 
 colors = {
           'background': '#111111',
@@ -238,8 +238,7 @@ app.layout = html.Div(children=[
     ### Displaying the uploaded results
 
     html.Div(id='output-vcf-upload'),
-    html.Div(dt.DataTable(data=pd.DataFrame().to_dict('records'),
-                          style_table={'overflowX': 'scroll'})),
+   
 
 
   ### ATTRIBUTIONS AND FOOTER
@@ -290,6 +289,10 @@ def update_output(list_of_contents, list_of_names, list_of_dates,
         children = [
             parse_contents(c, n, d, cost_metric, reduce_singletons) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
+        print('Returning children, type={}'.format(type(children)))
+        print(dir(children[0].children[8] ))
+        df = pd.DataFrame(children[0].children[8].data)
+        print(df.head())
         return children
 
     else:
@@ -319,7 +322,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates,
         children = [
             parse_vcf(c, n, d, cost_metric, reduce_singletons) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-
+        print('Returning children')
         return children
 
     else:
@@ -335,111 +338,129 @@ def update_output(list_of_contents, list_of_names, list_of_dates,
         return children
 
 
-@app.callback(
-    Output('download-rsid-solution-link', 'href'),
-    [Input('output-data-upload', 'children')])
-def update_download_link(results):
+#@app.callback(
+#    Output('download-rsid-solution-link', 'href'),
+#    [Input('output-data-upload', 'children')])
+#def update_download_link(results):
+#
+#    def _extract_df(parse_child):
+#        """Extracts datatable data into pandas df from
+#        output-data-upload
+#        """
+#        print('Parsing children for solution link')
+#        #data = parse_child[0].children[8].data
+#        data = parse_child[0]['props']['children'][8]['props']['data']
+#        df = pd.DataFrame(data)
+#        print('Constructing solution download link')
+#        if 'query_rsid' in df.columns:
+#            std_cols = ['rsid', 'query_rsid','var_class','CHROM', 'POS', 'REF', 'ALT']
+#            sampleids = list(set(df.columns) - set(std_cols))
+#            df = df[std_cols + sampleids]
+#        else:
+#            print('else')
+#            std_cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT']
+#            sampleids = list(set(df.columns) - set(std_cols))
+#            df = df[std_cols + sampleids]
+#        return df
+#
+#    print('Starting solution link work')
+#    if type(results) == list:
+#        print('Children received solution link')
+#        dff = _extract_df(results)
+#        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
+#        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
+#        return csv_string
+#    else:
+#        print('solution link type(results)')
+#        print(type(results))
+#        print('type results solution link ^')
+#        assert False
 
-    def _extract_df(parse_child):
-        """Extracts datatable data into pandas df from
-        output-data-upload
-        """
-        data = parse_child[0]['props']['children'][8]['props']['data']
-        df = pd.DataFrame(data)
+#@app.callback(
+#    Output('download-rsid-sample-link', 'href'),
+#    [Input('output-data-upload', 'children')])
+#def update_download_link(results):
+#
+#    def _extract_df(parse_child):
+#        """Extracts datatable data into pandas df from
+#        output-data-upload
+#        """
+#        print('Parsing children for sample link')
+#        data = parse_child[0]['props']['children'][6]['props']['data']
+#        df = pd.DataFrame(data)
+#        df = df[['sample_ids', 'Target Allele Count']]
+#        print('Constructing sample download link')
+#        return df
+#    print('Starting rsid sample link work')
+#    if type(results) == list:
+#        print('Children received sample link')
+#        dff = _extract_df(results)
+#        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
+#        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
+#        return csv_string
+#
+#    else:
+#        print('sample link type(results)')
+#        print(type(results))
+#        print('type results sample link ^')
+#        assert False
 
-        if 'query_rsid' in df.columns:
-            std_cols = ['rsid', 'query_rsid','var_class','CHROM', 'POS', 'REF', 'ALT']
-            sampleids = list(set(df.columns) - set(std_cols))
-            df = df[std_cols + sampleids]
-        else:
-            std_cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT']
-            sampleids = list(set(df.columns) - set(std_cols))
-            df = df[std_cols + sampleids]
-        return df
-
-
-    if type(results) == list:
-
-        dff = _extract_df(results)
-        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
-        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
-        return csv_string
-
-
-@app.callback(
-    Output('download-rsid-sample-link', 'href'),
-    [Input('output-data-upload', 'children')])
-def update_download_link(results):
-
-    def _extract_df(parse_child):
-        """Extracts datatable data into pandas df from
-        output-data-upload
-        """
-        data = parse_child[0]['props']['children'][6]['props']['data']
-        df = pd.DataFrame(data)
-        df = df[['sample_ids', 'Target Allele Count']]
-        return df
-
-    if type(results) == list:
-
-        dff = _extract_df(results)
-        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
-        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
-        return csv_string
-
-
-@app.callback(
-    Output('download-vcf-link', 'href'),
-    [Input('output-vcf-upload', 'children')])
-def update_download_link(results):
-
-    def _extract_df(parse_child):
-        """Extracts datatable data into pandas df from
-        output-data-upload
-        """
-
-        data = parse_child[0]['props']['children'][8]['props']['data']
-        df = pd.DataFrame(data)
-
-        if 'rsid' in df.columns:
-            std_cols = ['rsid', 'CHROM', 'POS', 'REF', 'ALT']
-            sampleids = list(set(df.columns) - set(std_cols))
-            df = df[std_cols + sampleids]
-        else:
-            std_cols = ['CHROM', 'POS', 'REF', 'ALT']
-            sampleids = list(set(df.columns) - set(std_cols))
-            df = df[std_cols + sampleids]
-        return df
+#@app.callback(
+#    Output('download-vcf-link', 'href'),
+#    [Input('output-vcf-upload', 'children')])
+#def update_download_link(results):
+#
+#    def _extract_df(parse_child):
+#        """Extracts datatable data into pandas df from
+#        output-data-upload
+#        """
+#
+#        data = parse_child[0]['props']['children'][8]['props']['data']
+#        df = pd.DataFrame(data)
+#
+#        if 'rsid' in df.columns:
+#            std_cols = ['rsid', 'CHROM', 'POS', 'REF', 'ALT']
+#            sampleids = list(set(df.columns) - set(std_cols))
+#            df = df[std_cols + sampleids]
+#        else:
+#            std_cols = ['CHROM', 'POS', 'REF', 'ALT']
+#            sampleids = list(set(df.columns) - set(std_cols))
+#            df = df[std_cols + sampleids]
+#        return df
+#
+#
+#    if type(results) == list:
+#
+#        dff = _extract_df(results)
+#        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
+#        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
+#        return csv_stringi
+#    else:
+#        assert False
 
 
-    if type(results) == list:
-
-        dff = _extract_df(results)
-        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
-        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
-        return csv_string
-
-
-@app.callback(
-    Output('download-vcf-sample-link', 'href'),
-    [Input('output-vcf-upload', 'children')])
-def update_download_link(results):
-
-    def _extract_df(parse_child):
-        """Extracts datatable data into pandas df from
-        output-data-upload
-        """
-        data = parse_child[0]['props']['children'][6]['props']['data']
-        df = pd.DataFrame(data)
-        df = df[['sample_ids', 'Target Allele Count']]
-        return df
-
-    if type(results) == list:
-
-        dff = _extract_df(results)
-        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
-        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
-        return csv_string
+#@app.callback(
+#    Output('download-vcf-sample-link', 'href'),
+#    [Input('output-vcf-upload', 'children')])
+#def update_download_link(results):
+#
+#    def _extract_df(parse_child):
+#        """Extracts datatable data into pandas df from
+#        output-data-upload
+#        """
+#        data = parse_child[0]['props']['children'][6]['props']['data']
+#        df = pd.DataFrame(data)
+#        df = df[['sample_ids', 'Target Allele Count']]
+#        return df
+#
+#    if type(results) == list:
+#
+#        dff = _extract_df(results)
+#        csv_string = dff.to_csv(index=False, encoding='utf-8',sep='\t')
+#        csv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(csv_string)
+#        return csv_stringi
+#    else:
+#        assert False
 
 
 if __name__ == '__main__':
