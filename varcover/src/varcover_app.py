@@ -289,9 +289,6 @@ def update_output(list_of_contents, list_of_names, list_of_dates,
         rsid_html = parse_contents(list_of_contents, list_of_names, list_of_dates,
                                    cost_metric, reduce_singletons)
         print('Returning children, type={}'.format(type(rsid_html)))
-        # print(dir(rsid_html[0].children[8] ))
-        # df = pd.DataFrame(rsid_html[0].children[8].data)
-        # print(df.head())
         return rsid_html
 
     else:

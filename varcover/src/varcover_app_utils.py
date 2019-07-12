@@ -155,14 +155,14 @@ def parse_contents(contents, filename, date,
             dt.DataTable(data=solution_samples.to_dict('records'),
                          columns=[{'id': c, 'name': c} for c in solution_samples.columns],
                          style_table={'overflowX': 'scroll',
-                                      'maxHeight': '300px'}),
-            html.H4('VarCover Solution Matrix',
-                    style={'textAlign': 'left',
-                       'color': '#d80b8c'}),
-            dt.DataTable(data=vc_soln.to_dict('records'),
-                        columns=[{'id': c, 'name': c} for c in vc_soln.columns],
-                         style_table={'overflowX': 'scroll',
-                                      'maxHeight': '300px'})
+                                      'maxHeight': '300px'}) #,
+            # html.H4('VarCover Solution Matrix',
+            #         style={'textAlign': 'left',
+            #            'color': '#d80b8c'}),
+            # dt.DataTable(data=vc_soln.to_dict('records'),
+            #             columns=[{'id': c, 'name': c} for c in vc_soln.columns],
+            #              style_table={'overflowX': 'scroll',
+            #                           'maxHeight': '300px'})
            ]
 
     if len(missing_rsids) == 0:
@@ -326,14 +326,14 @@ def parse_vcf(contents, filename, date,
             dt.DataTable(data=solution_samples.to_dict('records'),
                          columns=[{'id': c, 'name': c} for c in solution_samples.columns],
                          style_table={'overflowX': 'scroll',
-                                      'maxHeight': '300px'}),
-            html.H4('VarCover Solution Matrix',
-                    style={'textAlign': 'left',
-                       'color': '#d80b8c'}),
-            dt.DataTable(data=v.df.to_dict('records'),
-                        columns=[{'id': c, 'name': c} for c in v.df.columns],
-                         style_table={'overflowX': 'scroll',
-                                      'maxHeight': '300px'})
+                                      'maxHeight': '300px'}) #,
+            # html.H4('VarCover Solution Matrix',
+            #         style={'textAlign': 'left',
+            #            'color': '#d80b8c'}),
+            # dt.DataTable(data=v.df.to_dict('records'),
+            #             columns=[{'id': c, 'name': c} for c in v.df.columns],
+            #              style_table={'overflowX': 'scroll',
+            #                           'maxHeight': '300px'})
             ]
 
 
