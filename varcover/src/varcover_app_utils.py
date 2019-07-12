@@ -300,7 +300,7 @@ def parse_vcf(contents, filename, date,
     dropped_vars = vc.dropped_vars.reset_index().rename(columns={0:'GT'})
     soln = vc.getCoverSet(cost=cost_metric,
                           reduceSingletons=reduce_singletons,
-                          maxit=5)
+                          maxit=20)
 
     v.df = reset_index(vc.solution)
 

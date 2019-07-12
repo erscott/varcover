@@ -86,7 +86,7 @@ app.layout = html.Div(children=[
                   'marginBottom': '0.0em'}),
 
     html.H6("Consider using the VarCover package for tasks that require greater "
-            "data privacy or security: https://github.com/erscott/varcover",
+            "data privacy, security, or compute resources: https://github.com/erscott/varcover",
             style={'textAlign':'center', 'color':'#00aeef',
                   'marginTop': '0.0em',
                   'marginBottom': '5.0em'})
@@ -298,7 +298,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates,
             html.H5('Awaiting RSID Upload',
                     style={'textAlign': 'center',
                            'color': 'blue'}),
-            html.H6('(Max File Size is 1MB)',
+            html.H6('(Max Number of RSID is 500)',
                     style={'textAlign': 'center',
                            'color': 'blue'})])
 
@@ -321,8 +321,16 @@ def update_output(list_of_contents, list_of_names, list_of_dates,
 
         return vcf_html
 
+    else:
+        vcf_html = html.Div([
+            html.H5('Awaiting VCF Upload',
+                    style={'textAlign': 'center',
+                           'color': 'blue'}),
+            html.H6('(Max File Size is 1MB)',
+                    style={'textAlign': 'center',
+                           'color': 'blue'})])
 
-
+        return vcf_html
 
 
 if __name__ == '__main__':
