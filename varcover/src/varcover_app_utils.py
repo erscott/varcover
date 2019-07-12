@@ -40,6 +40,37 @@ from flask import Flask
 def parse_contents(contents, filename, date,
                   cost_metric, reduce_singletons):
 
+
+    def tsv_stringify(df, tsv_type):
+        """Converts dataframe to tsv string for html downloading
+
+        Arguments:
+        df: pandas DataFrame
+        tsv_type = 'solution_samples' or 'solution_matrix'
+
+        Returns:
+        tsv_string of dataframe
+        '"""
+        if tsv_type == 'solution_matrix':
+            print('Constructing solution download link')
+            if 'query_rsid' in df.columns:
+               std_cols = ['rsid', 'query_rsid','var_class','CHROM', 'POS', 'REF', 'ALT']
+               sampleids = list(set(df.columns) - set(std_cols))
+               df = df[std_cols + sampleids]
+            else:
+               print('else')
+               std_cols = ['rsid','CHROM', 'POS', 'ID', 'REF', 'ALT']
+               sampleids = list(set(df.columns) - set(std_cols))
+               df = df[std_cols + sampleids]
+
+        if tsv_type == 'solution_samples':
+            df = df[['sample_ids', 'Target Allele Count']]
+
+        tsv_string = df.to_csv(index=False, encoding='utf-8',sep='\t')
+        tsv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(tsv_string)
+        return tsv_string
+
+
     if reduce_singletons == 'True':
         reduce_singletons = True
     else:
@@ -99,7 +130,6 @@ def parse_contents(contents, filename, date,
 
     solution_samples = vc.sample_target_allele_cnt.reset_index()
 
-
     div = [
             html.H3('VarCover Results for: {}'.format(filename),
                     style={'textAlign': 'left',
@@ -126,11 +156,10 @@ def parse_contents(contents, filename, date,
                          columns=[{'id': c, 'name': c} for c in solution_samples.columns],
                          style_table={'overflowX': 'scroll',
                                       'maxHeight': '300px'}),
-
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(data=vc_soln.head(10).to_dict('records'),
+            dt.DataTable(data=vc_soln.to_dict('records'),
                         columns=[{'id': c, 'name': c} for c in vc_soln.columns],
                          style_table={'overflowX': 'scroll',
                                       'maxHeight': '300px'})
@@ -138,26 +167,28 @@ def parse_contents(contents, filename, date,
 
     if len(missing_rsids) == 0:
 
-        div.extend([html.H3('No Uncovered Variants'),
-                    html.Br()
+        div.extend([html.H4('No Uncovered Variants',
+                            style={'textAlign': 'left',
+                                   'color': '#d80b8c'}),
+                     html.Br()
                    ])
 
     else:
 
         missing_rsids = pd.DataFrame(missing_rsids, columns=['rsid'])
 
-
         div.extend([html.H4('Uncovered Variants',
-                            style={'textAlign': 'left',
-                                        'color': '#d80b8c'}),
-                    dt.DataTable(data=missing_rsids.to_dict('records'),
-                                columns=[{'id': c, 'name': c} for c in missing_rsids.columns],
-                                style_table={'overflowX': 'scroll',
-                                                    'maxHeight': '300px'}),
-                    html.Br()
-                   ])
+                        style={'textAlign': 'left',
+                                    'color': '#d80b8c'}),
+                dt.DataTable(data=missing_rsids.to_dict('records'),
+                            columns=[{'id': c, 'name': c} for c in missing_rsids.columns],
+                            style_table={'overflowX': 'scroll',
+                                                'maxHeight': '300px'}),
+                html.Br()
+               ])
 
-
+    varcover_solution_samples_tsv_str = tsv_stringify(solution_samples, 'solution_samples')
+    varcover_solution_matrix_tsv_str = tsv_stringify(vc_soln, 'solution_matrix')
     div.extend([html.A(
                     html.Button('Download RSID Solution Samples',
                                 className='container',
@@ -166,7 +197,7 @@ def parse_contents(contents, filename, date,
                                        'width':'25%'}),
                         id='download-rsid-sample-link',
                         download="VarCover_RSID_sample_set.tsv",
-                        href="",
+                        href=varcover_solution_samples_tsv_str,
                         target="_blank"),
 
                 html.Br(),
@@ -179,18 +210,51 @@ def parse_contents(contents, filename, date,
                                              'width':'25%'}),
                         id='download-rsid-solution-link',
                         download="VarCover_RSID_solution_matrix.tsv",
-                        href="",
+                        href=varcover_solution_matrix_tsv_str,
                         target="_blank"),
+
                 html.Hr()
                 ])
     print('Returning html.Div')
     return html.Div(div)
 
 
-
 # parse uploaded file into table
 def parse_vcf(contents, filename, date,
              cost_metric, reduce_singletons):
+
+
+    def tsv_stringify(df, tsv_type):
+        """Converts dataframe to tsv string for html downloading
+
+        Arguments:
+        df: pandas DataFrame
+        tsv_type = 'solution_samples' or 'solution_matrix'
+
+        Returns:
+        tsv_string of dataframe
+        '"""
+
+        if tsv_type == 'solution_matrix':
+            print('Constructing solution download link')
+            if tsv_type == 'solution_matrix':
+                if 'rsid' in df.columns:
+                   std_cols = ['rsid', 'CHROM', 'POS', 'REF', 'ALT']
+                   sampleids = list(set(df.columns) - set(std_cols))
+                   df = df[std_cols + sampleids]
+
+                else:
+                   std_cols = ['CHROM', 'POS', 'REF', 'ALT']
+                   sampleids = list(set(df.columns) - set(std_cols))
+                   df = df[std_cols + sampleids]
+
+        if tsv_type == 'solution_samples':
+            df = df[['sample_ids', 'Target Allele Count']]
+
+        tsv_string = df.to_csv(index=False, encoding='utf-8',sep='\t')
+        tsv_string = "data:text/tsv;charset=utf-8," + urllib.parse.quote(tsv_string)
+        return tsv_string
+
 
     if reduce_singletons == 'True':
         reduce_singletons = True
@@ -266,7 +330,7 @@ def parse_vcf(contents, filename, date,
             html.H4('VarCover Solution Matrix',
                     style={'textAlign': 'left',
                        'color': '#d80b8c'}),
-            dt.DataTable(data=v.df.head(10).to_dict('records'),
+            dt.DataTable(data=v.df.to_dict('records'),
                         columns=[{'id': c, 'name': c} for c in v.df.columns],
                          style_table={'overflowX': 'scroll',
                                       'maxHeight': '300px'})
@@ -290,11 +354,13 @@ def parse_vcf(contents, filename, date,
                                  style_table={'overflowX': 'scroll',
                                               'maxHeight': '300px'}),
                     html.Br()
-
                    ])
 
 
-    div.extend([html.A(
+    varcover_solution_samples_tsv_str = tsv_stringify(solution_samples, 'solution_samples')
+    varcover_solution_matrix_tsv_str = tsv_stringify(v.df, 'solution_matrix')
+    div.extend([html.Br(),
+                html.A(
                     html.Button('Download VCF Solution Samples',
                                 className='container',
                                 style={'color':'blue',
@@ -302,22 +368,23 @@ def parse_vcf(contents, filename, date,
                                        'width':'25%'}),
                         id='download-vcf-sample-link',
                         download="VarCover_VCF_sample_set.tsv",
-                        href="",
+                        href=varcover_solution_samples_tsv_str,
                         target="_blank"),
 
                 html.Br(),
 
                 html.A(
-                     html.Button('Download VCF Solution Matrix',
-                                      className='container',
-                                      style={'color':'blue',
-                                             'textAlign':'center',
-                                             'width':'25%'}),
-                        id='download-vcf-link',
-                        download="VarCover_VCF_solution_matrix.tsv",
-                        href="",
-                        target="_blank"),
-                html.Hr()
+                                 html.Button('Download VCF Solution Matrix',
+                                                  className='container',
+                                                  style={'color':'blue',
+                                                         'textAlign':'center',
+                                                         'width':'25%'}),
+                                    id='download-vcf-link',
+                                    download="VarCover_VCF_solution_matrix.tsv",
+                                    href=varcover_solution_matrix_tsv_str,
+                                    target="_blank"),
+                            html.Hr()
                 ])
+
     print('returning html.Div')
     return html.Div(div)
