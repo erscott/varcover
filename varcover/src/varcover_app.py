@@ -34,7 +34,9 @@ from pandasvcf import *
 from flask import Flask
 
 #external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-external_stylesheets = ['./data/bWLwgP.css']
+#external_stylesheets = ['./data/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', 'https://codepen.io/chriddyp/pen/brPBPO.css']
+
 
 server = Flask(__name__)
 
@@ -316,17 +318,10 @@ def update_output(list_of_contents, list_of_names, list_of_dates,
     if list_of_contents is not None:
         vcf_html = parse_vcf(list_of_contents, list_of_names, list_of_dates,
                             cost_metric, reduce_singletons)
+
         return vcf_html
 
-    else:
-        vcf_html = html.Div([
-            html.H5('Awaiting VCF Upload',
-                    style={'textAlign': 'center',
-                           'color': 'blue'}),
-            html.H6('(Max File Size is 1MB)',
-                    style={'textAlign': 'center',
-                           'color': 'blue'})])
-        return vcf_html
+
 
 
 

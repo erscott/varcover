@@ -119,7 +119,8 @@ def parse_contents(contents, filename, date,
 
     vc = varcover(gts)
     vc.getCoverSet(cost=cost_metric,
-                   reduceSingletons=reduce_singletons)
+                   reduceSingletons=reduce_singletons,
+                   maxit=5)
     del gts
     del ensembl
     vc_soln = reset_index(vc.solution)
@@ -155,14 +156,14 @@ def parse_contents(contents, filename, date,
             dt.DataTable(data=solution_samples.to_dict('records'),
                          columns=[{'id': c, 'name': c} for c in solution_samples.columns],
                          style_table={'overflowX': 'scroll',
-                                      'maxHeight': '300px'}) #,
-            # html.H4('VarCover Solution Matrix',
-            #         style={'textAlign': 'left',
-            #            'color': '#d80b8c'}),
-            # dt.DataTable(data=vc_soln.to_dict('records'),
-            #             columns=[{'id': c, 'name': c} for c in vc_soln.columns],
-            #              style_table={'overflowX': 'scroll',
-            #                           'maxHeight': '300px'})
+                                      'maxHeight': '300px'}) ,
+            html.H4('VarCover Solution Matrix',
+                    style={'textAlign': 'left',
+                       'color': '#d80b8c'}),
+            dt.DataTable(data=vc_soln.to_dict('records'),
+                        columns=[{'id': c, 'name': c} for c in vc_soln.columns],
+                         style_table={'overflowX': 'scroll',
+                                      'maxHeight': '300px'})
            ]
 
     if len(missing_rsids) == 0:
@@ -298,7 +299,8 @@ def parse_vcf(contents, filename, date,
     vc = varcover(v.df)
     dropped_vars = vc.dropped_vars.reset_index().rename(columns={0:'GT'})
     soln = vc.getCoverSet(cost=cost_metric,
-                          reduceSingletons=reduce_singletons)
+                          reduceSingletons=reduce_singletons,
+                          maxit=5)
 
     v.df = reset_index(vc.solution)
 
@@ -326,14 +328,14 @@ def parse_vcf(contents, filename, date,
             dt.DataTable(data=solution_samples.to_dict('records'),
                          columns=[{'id': c, 'name': c} for c in solution_samples.columns],
                          style_table={'overflowX': 'scroll',
-                                      'maxHeight': '300px'}) #,
-            # html.H4('VarCover Solution Matrix',
-            #         style={'textAlign': 'left',
-            #            'color': '#d80b8c'}),
-            # dt.DataTable(data=v.df.to_dict('records'),
-            #             columns=[{'id': c, 'name': c} for c in v.df.columns],
-            #              style_table={'overflowX': 'scroll',
-            #                           'maxHeight': '300px'})
+                                      'maxHeight': '300px'}),
+            html.H4('VarCover Solution Matrix',
+                    style={'textAlign': 'left',
+                       'color': '#d80b8c'}),
+            dt.DataTable(data=v.df.to_dict('records'),
+                        columns=[{'id': c, 'name': c} for c in v.df.columns],
+                         style_table={'overflowX': 'scroll',
+                                      'maxHeight': '300px'})
             ]
 
 
@@ -357,37 +359,37 @@ def parse_vcf(contents, filename, date,
                    ])
 
 
-    # varcover_solution_samples_tsv_str = tsv_stringify(solution_samples, 'solution_samples')
-    # print(len(varcover_solution_samples_tsv_str), type(varcover_solution_samples_tsv_str))
+    varcover_solution_samples_tsv_str = tsv_stringify(solution_samples, 'solution_samples')
+    print(len(varcover_solution_samples_tsv_str), type(varcover_solution_samples_tsv_str))
 
-    # varcover_solution_matrix_tsv_str = tsv_stringify(v.df, 'solution_matrix')
-    # print(len(varcover_solution_matrix_tsv_str), type(varcover_solution_matrix_tsv_str))
-    # div.extend([html.Br(),
-    #             html.A(
-    #                 html.Button('Download VCF Solution Samples',
-    #                             className='container',
-    #                             style={'color':'blue',
-    #                                    'textAlign':'center',
-    #                                    'width':'25%'}),
-    #                     id='download-vcf-sample-link',
-    #                     download="VarCover_VCF_sample_set.tsv",
-    #                     href=varcover_solution_samples_tsv_str,
-    #                     target="_blank"),
-    #
-    #             html.Br(),
+    varcover_solution_matrix_tsv_str = tsv_stringify(v.df, 'solution_matrix')
+    print(len(varcover_solution_matrix_tsv_str), type(varcover_solution_matrix_tsv_str))
+    div.extend([html.Br(),
+                html.A(
+                    html.Button('Download VCF Solution Samples',
+                                className='container',
+                                style={'color':'blue',
+                                       'textAlign':'center',
+                                       'width':'25%'}),
+                        id='download-vcf-sample-link',
+                        download="VarCover_VCF_sample_set.tsv",
+                        href=varcover_solution_samples_tsv_str,
+                        target="_blank"),
 
-                # html.A(
-                #                  html.Button('Download VCF Solution Matrix',
-                #                                   className='container',
-                #                                   style={'color':'blue',
-                #                                          'textAlign':'center',
-                #                                          'width':'25%'}),
-                #                     id='download-vcf-link',
-                #                     download="VarCover_VCF_solution_matrix.tsv",
-                #                     href=varcover_solution_matrix_tsv_str,
-                #                     target="_blank"),
-                # html.Hr()
-                # ])
+                html.Br(),
+
+                html.A(
+                                 html.Button('Download VCF Solution Matrix',
+                                                  className='container',
+                                                  style={'color':'blue',
+                                                         'textAlign':'center',
+                                                         'width':'25%'}),
+                                    id='download-vcf-link',
+                                    download="VarCover_VCF_solution_matrix.tsv",
+                                    href=varcover_solution_matrix_tsv_str,
+                                    target="_blank"),
+                html.Hr()
+                ])
 
     print('returning html.Div')
     return html.Div(div)
