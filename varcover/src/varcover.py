@@ -164,19 +164,22 @@ class varcover(object):
 
     def _reduceBySingletons(self):
         '''Isolates samples with singleton variants and
-           constructs setcover input dataframe with remaining variants
-           and samples
+           constructs setcover input dataframe with remaining variants and samples
            '''
         df = self.df.copy()
         singletons = df[df.apply(sum, axis=1)<2].replace(0, np.NaN).stack()
         singletons_samples = singletons.index.get_level_values('sample_ids')
         singletons_vars = singletons.reset_index('sample_ids').index.unique()
-        singleton_and_assoc_vars = df.loc[singletons_vars, singletons_samples]
+        singleton_and_assoc_vars = df.loc[:, singletons_samples] \
+                                    .replace(0, np.NaN).stack().reset_index('sample_ids')
 
-        singletons_removed = df.drop(singletons_vars) \
+        singletons_removed = df.drop(singleton_and_assoc_vars.index) \
                                .drop(singletons_samples, axis=1)
 
+        pivot_index = ['CHROM', 'POS', 'REF', 'ALT']
+        singleton_and_assoc_vars = singleton_and_assoc_vars.groupby(pivot_index + ['sample_ids'])[0].max().unstack()
         singletons_removed = self.dropMissingSamples(singletons_removed)
+        self.singleton_and_assoc_vars = singleton_and_assoc_vars.copy()
         self.singletons_removed = singletons_removed
         self.solution = singleton_and_assoc_vars
 
