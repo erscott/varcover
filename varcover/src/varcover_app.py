@@ -79,13 +79,18 @@ app.layout = html.Div(children=[
             style={'textAlign': 'center',
                    'color': '#d80b8c',
                   'marginBottom': '1.5em'}),
-
-    html.H5("Important Note: This is a public demonstration site and provides "
+    html.H3("VarCover is an open-source software package and web-interface that provides scientists and clinical laboratories with a simple method to assemble a validation panel with an approximately minimal set of samples needed to cover all possible target variants.",
+        style={'textAlign':'center',
+               'color':'#d80b8c',
+               'marginBottom':'1.5em',
+               'marginLeft':'7.5em',
+               'marginRight':'7.5em'}),
+    html.H3("Important Note: This is a public demonstration site and provides "
             "No Privacy Or Security Features.",
             style={'textAlign':'center', 'color':'#00aeef',
                   'marginBottom': '0.0em'}),
 
-    html.H6("Consider using the VarCover package for tasks that require greater "
+    html.H3("Consider using the VarCover package for tasks that require greater "
             "data privacy, security, or compute resources: https://github.com/erscott/varcover",
             style={'textAlign':'center', 'color':'#00aeef',
                   'marginTop': '0.0em',
@@ -157,7 +162,7 @@ app.layout = html.Div(children=[
 
     html.Div(children = [
 
-            html.H3('RSID file for 1KG Phase 3 Analysis',
+            html.H3('RSID file for 1KG Phase 3 Sample Selection',
             style={'textAlign': 'center','marginBottom': '0.0em',
                    'color': '#d80b8c'}),
             html.Abbr("file format ex.", title="#1 rsid per line: .tsv, .csv, "
