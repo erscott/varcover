@@ -1,6 +1,7 @@
 # VarCover 
 
-VarCover is an open-source software package and web-interface that provides scientists and clinical laboratories with a simple method to assemble a validation panel with an approximately minimal set of samples needed to cover all possible target variants.
+VarCover is an open-source software package and web-interface that provides scientists and clinical laboratories with a simple method to assemble a validation panel with an approximately minimum set of samples needed to cover all possible target variants.  Please cite the manuscript if you use VarCover: https://doi.org/10.1016/j.jmoldx.2019.10.005
+
 
 VarCover employs the:  
 * SetCoverPy package
@@ -8,6 +9,8 @@ VarCover employs the:
 * pre-selection of singleton-possessing samples 
 
 to efficiently solve the min-set cover problem. 
+
+A simple web-interface can be found at www.varcover.org.
 
 ## Set Cover Diagram
 ![alt text](https://github.com/erscott/varcover/blob/dev/varcover/data/coverset.jpeg)
@@ -31,7 +34,7 @@ VarCover CLI accepts a VCF file containing the variants of interest and availabl
 | vcf                    | path to vcf      |    -     |
 | -w, --weight (standard/logit)           | use sample allele frequency weighting |  standard  |   
 | -s, --singletonReduction | use singleton reduction modification      |  singletonReduction off  |
-| -n, --niters (integer) | number of PySetCover iterations      |  20  |
+| -n, --niters (integer) | number of SetCoverPy iterations      |  20  |
 | -o, --output_dir (/path/to/dir) | specifies output directory      |  current working directory  |    
 
 
