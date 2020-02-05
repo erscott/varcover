@@ -34,7 +34,7 @@ class EnsemblVar(object):
 
     def __init__(self, rsids,
                  genome='gr37', genotypes=False):
-        print('rsid file received')  
+        print('rsid file received')
         self.genome = genome
         self.genotypes = genotypes
         self.rsids = rsids
@@ -53,9 +53,9 @@ class EnsemblVar(object):
         """
 
         ensembl_res = []
-        for rsid_batch in range(0,len(self.rsids), 200):
-            print('submitting {}-{} rsids to ensembl api'.format(rsid_batch, rsid_batch+200))
-            self.ensembl_json = self._post_ensemblvar(self.rsids[rsid_batch:rsid_batch+200])
+        for rsid_batch in range(0,len(self.rsids), 100):
+            print('submitting {}-{} rsids to ensembl api'.format(rsid_batch, rsid_batch+100))
+            self.ensembl_json = self._post_ensemblvar(self.rsids[rsid_batch:rsid_batch+100])
             print('Extracting 1KG genotypes')
             ensembl_res.append(self.extract_1KG_genotypes())
         ensembl_res = pd.concat(ensembl_res)
