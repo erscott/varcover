@@ -217,6 +217,16 @@ class EnsemblVar(object):
             das server(+1 coordinates)
             '''
 
+            def chromosome_validate(chrom):
+
+                chr_chroms = set(['chr' + str(n) for n in range(1,23)] + ['chrX', 'chrY', 'chrM'])
+                chroms = set([str(n) for n in range(1,23)] + ['X', 'Y', 'M'])
+
+                if chrom in chroms or chrom in chr_chroms:
+                    return True
+                else:
+                    return False
+
             def parse_das_response(das):
 
                 seq = [i.decode("utf-8")  for i in das.iter_lines()]
@@ -228,6 +238,14 @@ class EnsemblVar(object):
 
             if 'chr' not in chrom:
                 chrom = 'chr' + str(chrom)
+
+            if chromosome_validate(chrom):
+                pass
+            else:
+                if just_seq:
+                    return 'N'
+                else:
+                    return [i for i in das_response.iter_lines()], 'N'
 
             cmd = ['http://genome.ucsc.edu/cgi-bin/das', genome, \
                    'dna?segment='+chrom+':'+str(start)+','+str(end)]
@@ -243,8 +261,24 @@ class EnsemblVar(object):
 
         def get_sequence_from_location_prepend(location, genome='hg19'):
 
+
+            def chromosome_validate(chrom):
+
+                chr_chroms = set(['chr' + str(n) for n in range(1,23)] + ['chrX', 'chrY', 'chrM'])
+                chroms = set([str(n) for n in range(1,23)] + ['X', 'Y', 'M'])
+
+                if chrom in chroms or chrom in chr_chroms:
+                    return True
+                else:
+                    return False
+
             chrom, coords = location.split(':')
             start, end = coords.split('-')
+
+            if chromosome_validate(chrom):
+                pass
+            else:
+                return 'N'
 
             if int(end) < int(start): # insertions
                 prepend_loc = end
