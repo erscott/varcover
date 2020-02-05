@@ -96,6 +96,13 @@ class EnsemblVar(object):
         ensembl_json = self.ensembl_json
         genos = []
         for rsid in ensembl_json.keys():
+            if 'mappings' in ensembl_json[rsid].keys():
+                if len(ensembl_json[rsid]['mappings']) == 0:
+                    continue
+                else:
+                    pass
+            else:
+                continue
             mappings = pd.DataFrame(ensembl_json[rsid]['mappings']).astype('category')
             mappings.index = [rsid] * mappings.shape[0]
             minor_allele = ensembl_json[rsid]['minor_allele']
@@ -103,7 +110,13 @@ class EnsemblVar(object):
 
             if self.genotypes:
                 df_geno = pd.DataFrame(ensembl_json[rsid]['genotypes'])
+                if df_geno.shape[0] == 0:  # empty genotypes
+                    print(rsid, 'empty data')
+                    continue
                 df_geno = df_geno[df_geno['sample'].str.contains('1000G')].astype('category')
+                if df_geno.shape[0] == 0: # no 1KG genotypes
+                    print(rsid, 'empty data')
+                    continue
                 df_geno.loc[:, 'sample_ids'] = df_geno['sample'].str.split(':').str[-1].astype('category')
                 df_geno.loc[:, 'minor_allele'] = minor_allele
                 df_geno.loc[:, 'rsid'] = rsid
@@ -122,8 +135,9 @@ class EnsemblVar(object):
                 genos.append(mappings[['allele_string', 'assembly_name',
                                        'location', 'strand', 'rsid',
                                        'var_class']])
-
-        return pd.concat(genos, sort=False).astype('category')
+        if len(genos) > 0:
+            return pd.concat(genos, sort=False).astype('category')
+        return pd.DataFrame()
 
 
     def split_multiallelic(self):
@@ -294,6 +308,7 @@ class EnsemblVar(object):
         rsid_remap = dict()
         for rsid in self.ensembl_json.keys():
             temp_df = self.ensembl_json[rsid]
+            if len(temp_df) < 1: continue
             synonym_match = set(temp_df['synonyms']) & set(self.rsids)
             if len(synonym_match) > 0:
                 rsid_remap[rsid] = list(synonym_match)[0]
@@ -345,9 +360,14 @@ class EnsemblVar(object):
                                          'vcfalt':'ALT'},
                                 inplace=True)
 
-        return self.ensembl_res.groupby(['rsid', 'query_rsid','var_class',\
-                                        'CHROM', 'POS', 'REF', 'ALT',\
-                                         'sample_ids'])['GTsum'].sum().unstack().fillna(0)
+        self.ensembl_res.reset_index(inplace=True)
+        self.ensembl_res.set_index(['rsid', 'query_rsid','var_class',\
+                          'CHROM', 'POS', 'REF', 'ALT',
+                          'sample_ids'], inplace=True)
+
+        self.ensembl_res = self.ensembl_res[['GTsum']].unstack().fillna(0)
+        self.ensembl_res.columns = self.ensembl_res.columns.droplevel(0)
+        return self.ensembl_res
 
 
     def set_rsid_bed(self,
