@@ -9,3 +9,4 @@ pysam==0.14.1
 python-dateutil==2.7.2
 scipy==1.1.0
 SetCoverPy==0.9.1
+pandasvcf==0.5.2
