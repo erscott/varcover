@@ -1,6 +1,6 @@
 conda==4.4.10
 futures==3.2.0
-ipython==5.6.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 numpy==1.14.3
 pandas==0.22.0
